@@ -27,9 +27,6 @@ public class BusStop {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "address", columnDefinition = "text")
-    private String address;
-
     @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
     private BigDecimal latitude;   // decimal(10,8)
 
@@ -49,12 +46,11 @@ public class BusStop {
     private Instant updatedAt = Instant.now();
 
     @Builder
-    public BusStop(UUID academyId, String name, String address,
+    public BusStop(UUID academyId, String name,
                    BigDecimal latitude, BigDecimal longitude,
                    String photoUrl, Boolean isActive) {
         this.academyId = academyId;
         this.name = name;
-        this.address = address;
         this.latitude = latitude;
         this.longitude = longitude;
         this.photoUrl = photoUrl;
@@ -63,10 +59,9 @@ public class BusStop {
         this.updatedAt = Instant.now();
     }
 
-    public void update(String name, String address, BigDecimal latitude, BigDecimal longitude,
+    public void update(String name, BigDecimal latitude, BigDecimal longitude,
                        String photoUrl, Boolean isActive) {
         if (name != null) this.name = name;
-        if (address != null) this.address = address;
         if (latitude != null) this.latitude = latitude;
         if (longitude != null) this.longitude = longitude;
         if (photoUrl != null) this.photoUrl = photoUrl;

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>BusStop Service Tester</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 1100px; margin: 20px auto; padding: 0 12px; }
+    h2 { margin-top: 28px; }
+    fieldset { border: 1px solid #ddd; border-radius: 10px; padding: 12px; margin: 12px 0; }
+    legend { padding: 0 6px; color: #444; }
+    label { display: block; margin: 6px 0 2px; font-size: 14px; color: #333; }
+    input, select { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
+    button { padding: 8px 12px; border: 0; border-radius: 8px; cursor: pointer; }
+    .btn { background: #2b6cb0; color: white; }
+    .btn:disabled { background: #8aaed6; cursor: not-allowed; }
+    .btn-secondary { background: #4a5568; color: white; }
+    .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+    .mt-20 { margin-top: 20px; }
+    .card { border: 1px solid #eee; border-radius: 12px; padding: 14px; background: #fafafa; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+    th { background: #f3f4f6; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#edf2f7; }
+    .status { font-size: 13px; white-space: pre-wrap; background: #0b10211a; padding: 8px; border-radius: 8px; }
+    .danger { background: #fee2e2; color:#991b1b; }
+    .success { background: #ecfdf5; color:#065f46; }
+    .muted { color:#666; font-size: 13px; }
+    .flex { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <h1>🚌 BusStop Service Tester</h1>
+  <div class="muted">엔드포인트 경로는 필요 시 코드 상단의 <code>API_BASE</code>와 fetch 경로를 수정하세요.</div>
+
+  <fieldset>
+    <legend>목록 / 페이징</legend>
+    <div class="row-4">
+      <div>
+        <label>Academy ID (UUID)</label>
+        <input id="list-academyId" placeholder="예: 11111111-2222-3333-4444-555555555555" />
+      </div>
+      <div>
+        <label>Page (0부터 시작)</label>
+        <input id="list-page" type="number" min="0" value="0" />
+      </div>
+      <div>
+        <label>Size</label>
+        <input id="list-size" type="number" min="1" value="10" />
+      </div>
+      <div>
+        <label>Sort</label>
+        <input id="list-sort" value="createdAt,desc" />
+      </div>
+    </div>
+    <div class="mt-8 flex">
+      <button class="btn" id="btn-load">목록 로드</button>
+      <button class="btn-secondary" id="btn-prev">이전 페이지</button>
+      <button class="btn-secondary" id="btn-next">다음 페이지</button>
+      <span id="page-info" class="pill">page ? / ?</span>
+    </div>
+  </fieldset>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Academy</th>
+          <th>Name</th>
+          <th>Lat,Lng</th>
+          <th>Active</th>
+          <th>Updated</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="list-body">
+        <tr><td colspan="7" class="muted">데이터 없음</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>생성 (Create)</h2>
+  <fieldset>
+    <legend>BusStopCreateRequest</legend>
+    <div class="row-3">
+      <div>
+        <label>Academy ID (UUID) *</label>
+        <input id="c-academyId" />
+      </div>
+      <div>
+        <label>Name *</label>
+        <input id="c-name" placeholder="예: 강남역 1번출구" />
+      </div>
+      <div>
+        <label>Photo URL</label>
+        <input id="c-photoUrl" placeholder="https://..." />
+      </div>
+    </div>
+    <div class="row-3 mt-8">
+      <div>
+        <label>Latitude *</label>
+        <input id="c-lat" type="number" step="0.0000001" placeholder="예: 37.4979" />
+      </div>
+      <div>
+        <label>Longitude *</label>
+        <input id="c-lng" type="number" step="0.0000001" placeholder="예: 127.0276" />
+      </div>
+      <div>
+        <label>isActive</label>
+        <select id="c-active">
+          <option value="">(기본: true)</option>
+          <option value="true" selected>true</option>
+          <option value="false">false</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-8">
+      <button class="btn" id="btn-create">Create</button>
+    </div>
+  </fieldset>
+
+  <h2>수정 (Update)</h2>
+  <fieldset>
+    <legend>BusStopUpdateRequest (부분수정 가능)</legend>
+    <div class="row-4">
+      <div>
+        <label>BusStop ID (UUID) *</label>
+        <input id="u-id" placeholder="수정할 정류장 ID" />
+      </div>
+      <div>
+        <label>Name</label>
+        <input id="u-name" placeholder="바꿀 이름 (선택)" />
+      </div>
+      <div>
+        <label>Photo URL</label>
+        <input id="u-photoUrl" placeholder="https://... (선택)" />
+      </div>
+      <div>
+        <label>isActive</label>
+        <select id="u-active">
+          <option value="">(변경 안함)</option>
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+      </div>
+    </div>
+    <div class="row-3 mt-8">
+      <div>
+        <label>Latitude</label>
+        <input id="u-lat" type="number" step="0.0000001" placeholder="선택" />
+      </div>
+      <div>
+        <label>Longitude</label>
+        <input id="u-lng" type="number" step="0.0000001" placeholder="선택" />
+      </div>
+    </div>
+    <div class="mt-8">
+      <button class="btn" id="btn-update">Update</button>
+    </div>
+  </fieldset>
+
+  <h2>삭제 (Delete)</h2>
+  <fieldset>
+    <legend>하드 삭제</legend>
+    <div class="row-3">
+      <div>
+        <label>BusStop ID (UUID) *</label>
+        <input id="d-id" placeholder="삭제할 정류장 ID" />
+      </div>
+      <div class="mt-20">
+        <button class="btn danger" id="btn-delete">Delete</button>
+      </div>
+    </div>
+  </fieldset>
+
+  <h2>상태 / 응답</h2>
+  <div id="status" class="status muted">요청 로그 및 응답이 여기에 표시됩니다.</div>
+
+  <script>
+    // === 설정 ===
+    const API_BASE = ''; // 예: 'http://localhost:8080' 필요시 채워넣으세요.
+
+    // === 상태 ===
+    let currentPage = 0;
+    let currentSize = 10;
+    let currentSort = 'createdAt,desc';
+    let currentAcademyId = '';
+
+    // === DOM ===
+    const $ = (id) => document.getElementById(id);
+    const listBody = $('list-body');
+    const pageInfo = $('page-info');
+    const statusBox = $('status');
+
+    function logStatus(msg, cls='') {
+      statusBox.className = 'status ' + (cls || 'muted');
+      statusBox.textContent = msg;
+    }
+
+    function buildQuery(params) {
+      const usp = new URLSearchParams(params);
+      return '?' + usp.toString();
+    }
+
+    // === 목록 로드 ===
+    async function loadList() {
+      currentAcademyId = $('list-academyId').value.trim();
+      currentPage = parseInt($('list-page').value || '0', 10);
+      currentSize = parseInt($('list-size').value || '10', 10);
+      currentSort = $('list-sort').value || 'createdAt,desc';
+
+      if (!currentAcademyId) {
+        logStatus('Academy ID가 필요합니다.', 'danger');
+        return;
+      }
+
+      const url = `${API_BASE}/api/academies/${currentAcademyId}/bus-stops` + buildQuery({
+        page: currentPage,
+        size: currentSize,
+        sort: currentSort
+      });
+
+      try {
+        logStatus(`GET ${url}`);
+        const res = await fetch(url, { method: 'GET' });
+        const data = await res.json();
+
+        // Spring Data Page 형식 가정
+        renderTable(data.content || []);
+        renderPageInfo(data);
+
+        if (!res.ok) {
+          logStatus(`목록 실패: ${res.status}\n` + JSON.stringify(data, null, 2), 'danger');
+        } else {
+          logStatus(`목록 성공 (page ${data.number} / totalPages ${data.totalPages})\n` + JSON.stringify(data, null, 2), 'success');
+        }
+      } catch (e) {
+        logStatus('목록 요청 중 오류: ' + e.message, 'danger');
+      }
+    }
+
+    function renderTable(items) {
+      if (!items.length) {
+        listBody.innerHTML = `<tr><td colspan="7" class="muted">데이터 없음</td></tr>`;
+        return;
+      }
+      listBody.innerHTML = items.map(row => {
+        const updated = row.updatedAt ? new Date(row.updatedAt).toLocaleString() : '-';
+        return `
+          <tr>
+            <td>${row.id || '-'}</td>
+            <td>${row.academyId || '-'}</td>
+            <td>${row.name || '-'}</td>
+            <td>${row.latitude}, ${row.longitude}</td>
+            <td><span class="pill">${row.isActive ? 'true' : 'false'}</span></td>
+            <td>${updated}</td>
+            <td>
+              <button class="btn-secondary" onclick="prefillUpdate('${row.id}','${row.name ?? ''}','${row.photoUrl ?? ''}',${row.isActive})">수정폼에 채우기</button>
+              <button class="btn danger" onclick="deleteById('${row.id}')">삭제</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderPageInfo(p) {
+      if (!p || typeof p.number !== 'number') {
+        pageInfo.textContent = 'page ? / ?';
+        return;
+      }
+      pageInfo.textContent = `page ${p.number} / ${Math.max(p.totalPages - 1, 0)} | total ${p.totalElements}`;
+      $('btn-prev').disabled = p.first;
+      $('btn-next').disabled = p.last;
+    }
+
+    // === 생성 ===
+    async function createOne() {
+      const academyId = $('c-academyId').value.trim();
+      const name = $('c-name').value.trim();
+      const lat = $('c-lat').value;
+      const lng = $('c-lng').value;
+      const photoUrl = $('c-photoUrl').value.trim();
+      const activeVal = $('c-active').value;
+
+      if (!academyId || !name || !lat || !lng) {
+        logStatus('academyId, name, latitude, longitude는 필수입니다.', 'danger');
+        return;
+      }
+
+      const body = {
+        academyId,
+        name,
+        latitude: Number(lat),
+        longitude: Number(lng),
+        photoUrl: photoUrl || null,
+        isActive: activeVal === '' ? true : (activeVal === 'true')
+      };
+
+      const url = `${API_BASE}/api/academies/${academyId}/bus-stops`;
+      try {
+        logStatus(`POST ${url}\n` + JSON.stringify(body, null, 2));
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          logStatus(`생성 실패: ${res.status}\n` + JSON.stringify(data, null, 2), 'danger');
+        } else {
+          logStatus('생성 성공\n' + JSON.stringify(data, null, 2), 'success');
+          // 목록 갱신
+          await loadList();
+        }
+      } catch (e) {
+        logStatus('생성 요청 중 오류: ' + e.message, 'danger');
+      }
+    }
+
+    // === 수정 ===
+    function prefillUpdate(id, name, photoUrl, isActive) {
+      $('u-id').value = id;
+      $('u-name').value = (name && name !== 'null') ? name : '';
+      $('u-photoUrl').value = (photoUrl && photoUrl !== 'null') ? photoUrl : '';
+      $('u-active').value = (typeof isActive === 'boolean') ? String(isActive) : '';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    async function updateOne() {
+      const id = $('u-id').value.trim();
+      if (!id) {
+        logStatus('수정할 BusStop ID가 필요합니다.', 'danger');
+        return;
+      }
+
+      const name = $('u-name').value.trim();
+      const photoUrl = $('u-photoUrl').value.trim();
+      const lat = $('u-lat').value;
+      const lng = $('u-lng').value;
+      const activeRaw = $('u-active').value;
+
+      // 부분 수정이므로 채워진 값만 보냄
+      const body = {};
+      if (name) body.name = name;
+      if (photoUrl) body.photoUrl = photoUrl;
+      if (lat) body.latitude = Number(lat);
+      if (lng) body.longitude = Number(lng);
+      if (activeRaw !== '') body.isActive = (activeRaw === 'true');
+
+      if (Object.keys(body).length === 0) {
+        logStatus('변경할 필드가 없습니다. 하나 이상 입력하세요.', 'danger');
+        return;
+      }
+
+      const url = `${API_BASE}/api/bus-stops/${id}`;
+      try {
+        logStatus(`PATCH ${url}\n` + JSON.stringify(body, null, 2));
+        const res = await fetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          logStatus(`수정 실패: ${res.status}\n` + JSON.stringify(data, null, 2), 'danger');
+        } else {
+          logStatus('수정 성공\n' + JSON.stringify(data, null, 2), 'success');
+          await loadList();
+        }
+      } catch (e) {
+        logStatus('수정 요청 중 오류: ' + e.message, 'danger');
+      }
+    }
+
+    // === 삭제 ===
+    async function deleteOne() {
+      const id = $('d-id').value.trim();
+      if (!id) {
+        logStatus('삭제할 BusStop ID가 필요합니다.', 'danger');
+        return;
+      }
+      await deleteById(id);
+    }
+
+    async function deleteById(id) {
+      const url = `${API_BASE}/api/bus-stops/${id}`;
+      try {
+        logStatus(`DELETE ${url}`);
+        const res = await fetch(url, { method: 'DELETE' });
+        if (res.status === 204 || res.ok) {
+          logStatus('삭제 성공', 'success');
+          await loadList();
+        } else {
+          let data = {};
+          try { data = await res.json(); } catch {}
+          logStatus(`삭제 실패: ${res.status}\n` + JSON.stringify(data, null, 2), 'danger');
+        }
+      } catch (e) {
+        logStatus('삭제 요청 중 오류: ' + e.message, 'danger');
+      }
+    }
+
+    // === 페이지 네비게이션 ===
+    $('btn-load').addEventListener('click', loadList);
+    $('btn-prev').addEventListener('click', () => {
+      const p = Math.max(parseInt($('list-page').value || '0', 10) - 1, 0);
+      $('list-page').value = p;
+      loadList();
+    });
+    $('btn-next').addEventListener('click', () => {
+      const p = parseInt($('list-page').value || '0', 10) + 1;
+      $('list-page').value = p;
+      loadList();
+    });
+
+    // === CRUD 버튼 ===
+    $('btn-create').addEventListener('click', createOne);
+    $('btn-update').addEventListener('click', updateOne);
+    $('btn-delete').addEventListener('click', deleteOne);
+
+    // 초기: 비워둠
+  </script>
+</body>
+</html>
