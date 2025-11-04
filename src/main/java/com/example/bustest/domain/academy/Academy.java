@@ -9,6 +9,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
 /**
  * 학원 엔티티
  * 학원의 기본 정보와 운영 정보를 관리
@@ -46,6 +52,13 @@ public class Academy {
     @ElementCollection
     @OrderBy("operationType ASC")
     List<OperationInfo> operationInfos;
+
+    @JdbcTypeCode(SqlTypes.GEOMETRY)
+    @Column(name = "geom", columnDefinition = "geography(Point,4326)")
+    private Point geom;
+
+    private static final transient GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
+
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();

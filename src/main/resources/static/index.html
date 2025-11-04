@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kakao Map Integration</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { width: 100%; height: calc(100% - 140px); }
+    .panel { padding: 10px; }
+    input, select, button { margin: 4px; padding: 6px; }
+  </style>
+  <script type="text/javascript"
+          src="//dapi.kakao.com/v2/maps/sdk.js?appkey=651a42d67f9cd74a1fcbb557bb60907f&autoload=false"></script>
+</head>
+<body>
+<div class="panel">
+  <h3>Bunncet + KaKaoMap</h3>
+  <div>
+    <input id="title" placeholder="명칭 (예: 홍길동 집)" size="24" />
+    <input id="address" placeholder="주소 (지오코딩)" size="40" />
+    <select id="type">
+      <option value="STUDENT">STUDENT</option>
+      <option value="STOP">STOP</option>
+    </select>
+    <button onclick="submitLocation()">주소 등록</button>
+    <button onclick="loadMarkers()">마커 새로고침</button>
+    <!-- 노선(경로) 기능 버튼 -->
+    <button onclick="toggleRouteMode()" id="btnRouteMode">노선등록 모드: OFF</button>
+    <button onclick="drawRoute()">경로 그리기</button>
+    <button onclick="clearRoute()">경로 지우기</button>
+  </div>
+</div>
+<div id="map"></div>
+
+<script src="/script.js"></script>
+</body>
+</html>
+
