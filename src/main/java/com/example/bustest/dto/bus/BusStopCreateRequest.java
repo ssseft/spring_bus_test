@@ -7,6 +7,11 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
+
 /**
  * 정류장 생성 DTO
  */
@@ -41,11 +46,17 @@ public class BusStopCreateRequest {
 
     //생성자
     public BusStop toEntity() {
+        GeometryFactory gf = new GeometryFactory(new PrecisionModel(), 4326);
+        Point p = gf.createPoint(new Coordinate(
+                this.longitude.doubleValue(),
+                this.latitude.doubleValue()
+        ));
+        p.setSRID(4326);
+
         return BusStop.builder()
                 .academyId(this.academyId)
                 .name(this.name)
-                .latitude(this.latitude)
-                .longitude(this.longitude)
+                .geom(p)
                 .photoUrl(this.photoUrl)
                 .isActive(this.isActive == null ? Boolean.TRUE : this.isActive)
                 .build();

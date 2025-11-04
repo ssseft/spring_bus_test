@@ -26,6 +26,7 @@ public enum ErrorCode {
 
     // BusStop 관련 에러
     BUS_STOP_NOT_FOUND(HttpStatus.NOT_FOUND, "BUS_STOP-001", "정류장을 찾을 수 없습니다."),
+    BUS_STOP_DESTINATION_NOT_FOUND(HttpStatus.NOT_FOUND, "BUS_STOP-002", "위치를 찾을 수 없습니다."),
 
     // 일반 에러
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON-001", "서버 내부 오류가 발생했습니다."),

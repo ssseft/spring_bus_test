@@ -10,6 +10,13 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.locationtech.jts.geom.Point;
+import com.example.bustest.exception.BaseException;
+import com.example.bustest.exception.ErrorCode;
+ 
+
 /** 정류장 */
 @Entity
 @Table(name = "bus_stops")
@@ -27,11 +34,10 @@ public class BusStop {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
-    private BigDecimal latitude;   // decimal(10,8)
+    @JdbcTypeCode(SqlTypes.GEOMETRY)
+    @Column(name = "geom", nullable = false, columnDefinition = "geography(Point,4326)")
+    private Point geom; // 위경도를 point로 저장
 
-    @Column(name = "longitude", nullable = false, precision = 11, scale = 8)
-    private BigDecimal longitude;  // decimal(11,8)
 
     @Column(name = "photo_url", length = 500)
     private String photoUrl;
@@ -47,23 +53,43 @@ public class BusStop {
 
     @Builder
     public BusStop(UUID academyId, String name,
-                   BigDecimal latitude, BigDecimal longitude,
+                   Point geom,
                    String photoUrl, Boolean isActive) {
         this.academyId = academyId;
         this.name = name;
-        this.latitude = latitude;
-        this.longitude = longitude;
         this.photoUrl = photoUrl;
         this.isActive = isActive != null ? isActive : true;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
+        if (geom == null) throw new BaseException(ErrorCode.BUS_STOP_DESTINATION_NOT_FOUND);
+        if (geom.getSRID() != 4326) geom.setSRID(4326);
+        this.geom = geom;
     }
 
-    public void update(String name, BigDecimal latitude, BigDecimal longitude,
+
+    // 나중에 위도,경도 호출할 때 사용
+    public BigDecimal getLatitude() {
+        return BigDecimal.valueOf(geom.getY());
+    }
+
+    public BigDecimal getLongitude() {
+        return BigDecimal.valueOf(geom.getX());
+    }
+
+    // 서비스에서 사용: Point로 geom 설정
+    public void setGeom(Point geom) {
+        //geom 은 notnull로 받을거긴한데 혹시 모르니 체크
+        if (geom == null) throw new BaseException(ErrorCode.BUS_STOP_DESTINATION_NOT_FOUND);
+        // SRID 4326은 표준 위도/경도
+        if (geom.getSRID() != 4326) geom.setSRID(4326);
+        this.geom = geom;
+        this.updatedAt = Instant.now();
+    }
+
+    public void update(String name, Point geom,
                        String photoUrl, Boolean isActive) {
         if (name != null) this.name = name;
-        if (latitude != null) this.latitude = latitude;
-        if (longitude != null) this.longitude = longitude;
+        if (geom != null) setGeom(geom);
         if (photoUrl != null) this.photoUrl = photoUrl;
         if (isActive != null) this.isActive = isActive;
         this.updatedAt = Instant.now();

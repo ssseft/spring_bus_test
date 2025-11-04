@@ -6,15 +6,15 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
+import com.example.bustest.exception.BaseException;
+import com.example.bustest.exception.ErrorCode;
 /**
  * 학원 엔티티
  * 학원의 기본 정보와 운영 정보를 관리
@@ -54,11 +54,8 @@ public class Academy {
     List<OperationInfo> operationInfos;
 
     @JdbcTypeCode(SqlTypes.GEOMETRY)
-    @Column(name = "geom", columnDefinition = "geography(Point,4326)")
-    private Point geom;
-
-    private static final transient GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
-
+    @Column(name = "geom", nullable = false, columnDefinition = "geography(Point,4326)")
+    private Point geom; // service에서 create할 때 계산하고 넣을 예정
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -71,7 +68,7 @@ public class Academy {
      * 생성자 함수
      */
     @Builder
-    public Academy(String name, String phoneNumber, String email, Address address, User repManager, String logoUrl, List<OperationInfo> operationInfos) {
+    public Academy(String name, String phoneNumber, String email, Address address, User repManager, String logoUrl, List<OperationInfo> operationInfos, Point geom) {
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.email = email;
@@ -81,6 +78,26 @@ public class Academy {
         this.operationInfos = operationInfos;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
+
+        if (geom == null) throw new BaseException(ErrorCode.BUS_SOP_DESTINATION_NOT_FOUND);
+        if (geom.getSRID() != 4326) geom.setSRID(4326);
+        this.geom = geom;
+    }
+
+    public void setGeom(Point geom) {
+        if (geom == null) throw new BaseException(ErrorCode.BUS_SOP_DESTINATION_NOT_FOUND);
+        if (geom.getSRID() != 4326) geom.setSRID(4326);
+        this.geom = geom;
+        this.updatedAt = Instant.now();
+    }
+
+    // 파생 getter: geom은 NOT NULL이므로 바로 반환
+    public BigDecimal getLatitude() {
+        return BigDecimal.valueOf(geom.getY());
+    }
+
+    public BigDecimal getLongitude() {
+        return BigDecimal.valueOf(geom.getX());
     }
 
     /**

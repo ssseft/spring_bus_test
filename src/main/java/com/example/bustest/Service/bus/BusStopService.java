@@ -15,6 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 
 @Service
 @RequiredArgsConstructor
@@ -49,11 +53,19 @@ public class BusStopService {
     public BusStopSummaryResponse update(UUID id, BusStopUpdateRequest req) {
         BusStop bs = busStopRepository.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorCode.BUS_STOP_NOT_FOUND));
+        Point point = null;
+        if (req.getLatitude() != null && req.getLongitude() != null) {
+            GeometryFactory gf = new GeometryFactory(new PrecisionModel(), 4326);
+            point = gf.createPoint(new Coordinate(
+                    req.getLongitude().doubleValue(),
+                    req.getLatitude().doubleValue()
+            ));
+            point.setSRID(4326);
+        }
 
         bs.update(
                 req.getName(),
-                req.getLatitude(),
-                req.getLongitude(),
+                point,
                 req.getPhotoUrl(),
                 req.getIsActive()
         );

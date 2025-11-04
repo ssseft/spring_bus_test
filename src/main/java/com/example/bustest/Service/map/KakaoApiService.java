@@ -101,8 +101,7 @@ public class KakaoApiService {
             if (!documents.isArray() || documents.isEmpty()) return Optional.empty();
             JsonNode first = documents.get(0);
             double x = first.path("x").asDouble();
-            dou
-            ble y = first.path("y").asDouble();
+            double y = first.path("y").asDouble();
             if (Double.isNaN(x) || Double.isNaN(y)) return Optional.empty();
             return Optional.of(new CoordinateDTO(y, x));
         } catch (Exception e) {
