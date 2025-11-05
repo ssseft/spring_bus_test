@@ -3,10 +3,10 @@ package com.example.bustest.Service.map;
 import com.example.bustest.Repository.bus.BusStopRepository;
 import com.example.bustest.domain.bus.BusStop;
 import com.example.bustest.dto.map.CoordinateDTO;
-import com.example.bustest.dto.map.CreateRouteRequest;
-import com.example.bustest.dto.map.CreateRouteResponse;
-import com.example.bustest.dto.map.NaviResult;
-import com.example.bustest.dto.map.RouteResponse;
+import com.example.bustest.dto.map.RouteCreateRequest;
+import com.example.bustest.dto.map.RouteCreateResponse;
+import com.example.bustest.Service.map.NaviApiService.NaviResult;
+import com.example.bustest.dto.map.RoutePathResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -34,7 +34,7 @@ public class RoutePersistService {
     }
 
     @Transactional
-    public CreateRouteResponse create(UUID academyId, CreateRouteRequest req) {
+    public RouteCreateResponse create(UUID academyId, RouteCreateRequest req) {
         List<UUID> ids = Optional.ofNullable(req.getOrderedBusStopIds()).orElse(Collections.emptyList());
         if (ids.size() < 2) throw new IllegalArgumentException("At least 2 bus stops required");
 
@@ -58,7 +58,7 @@ public class RoutePersistService {
         NaviResult navi = naviApiService.directionsWithRaw(coords)
                 .orElseThrow(() -> new IllegalStateException("Directions API failed"));
 
-        RouteResponse summary = navi.getSummary();
+        RoutePathResponse summary = navi.getSummary();
         long duration = summary.getDurationSeconds();
         LocalTime total = LocalTime.ofSecondOfDay(Math.floorMod(duration, 24 * 3600));
 
@@ -95,6 +95,6 @@ public class RoutePersistService {
             throw new IllegalStateException("Route persist failed", e);
         }
 
-        return new CreateRouteResponse(routeId, summary);
+        return new RouteCreateResponse(routeId, summary);
     }
 }

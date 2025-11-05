@@ -20,8 +20,6 @@ import java.util.UUID;
 
 public class BusStopController {
 
-
-
     private final BusStopService busStopService;
 
     // 학원별 정류장 조회

@@ -1,8 +1,7 @@
 package com.example.bustest.Service.map;
 
 import com.example.bustest.dto.map.CoordinateDTO;
-import com.example.bustest.dto.map.RouteResponse;
-import com.example.bustest.dto.map.NaviResult;
+import com.example.bustest.dto.map.RoutePathResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,7 +42,7 @@ public class NaviApiService {
     /**
      * 순서가 보장된 좌표 목록(최소 2개)으로 길찾기 요청을 보내고, 그릴 수 있는 폴리라인과 요약값을 반환합니다.
      */
-    public Optional<RouteResponse> directionsByOrderedCoords(List<CoordinateDTO> ordered) {
+    public Optional<RoutePathResponse> directionsByOrderedCoords(List<CoordinateDTO> ordered) {
         try {
             if (ordered == null || ordered.size() < 2) return Optional.empty();
 
@@ -114,7 +113,7 @@ public class NaviApiService {
                 }
             }
 
-            return Optional.of(new RouteResponse(path, distance, duration));
+            return Optional.of(new RoutePathResponse(path, distance, duration));
         } catch (Exception e) {
             return Optional.empty();
         }
@@ -189,7 +188,7 @@ public class NaviApiService {
                 }
             }
 
-            RouteResponse summary = new RouteResponse(path, distance, duration);
+            RoutePathResponse summary = new RoutePathResponse(path, distance, duration);
             return Optional.of(new NaviResult(summary, root));
         } catch (Exception e) {
             return Optional.empty();
@@ -199,5 +198,23 @@ public class NaviApiService {
     private String toXY(CoordinateDTO c) {
         // Kakao Navi 는 x(경도),y(위도) 순 매개변수를 요구
         return c.getLongitude() + "," + c.getLatitude();
+    }
+
+    public static class NaviResult {
+        private final RoutePathResponse summary;
+        private final JsonNode raw;
+
+        public NaviResult(RoutePathResponse summary, JsonNode raw) {
+            this.summary = summary;
+            this.raw = raw;
+        }
+
+        public RoutePathResponse getSummary() {
+            return summary;
+        }
+
+        public JsonNode getRaw() {
+            return raw;
+        }
     }
 }

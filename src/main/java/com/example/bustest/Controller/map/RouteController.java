@@ -23,11 +23,9 @@ public class RouteController {
     private final RoutePersistService routePersistService;
     private final RouteQueryService routeQueryService;
 
-    // LocationEntry 기반 프리뷰는 제거되었습니다.
-
     // Preview (BusStop 기반 / UUID)
     @PostMapping({"/preview", "/directions-busstops"})
-    public ResponseEntity<?> previewByBusStops(@RequestBody RouteBusStopRequest req) {
+    public ResponseEntity<?> previewByBusStops(@RequestBody RouteCreateRequest req) {
         List<UUID> ids = Optional.ofNullable(req.getOrderedBusStopIds()).orElse(Collections.emptyList());
         if (ids.size() < 2) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("At least 2 bus stops required");
@@ -53,14 +51,14 @@ public class RouteController {
     }
 
     @PostMapping("/academies/{academyId}")
-    public ResponseEntity<CreateRouteResponse> create(@PathVariable UUID academyId,
-                                                      @RequestBody CreateRouteRequest req) {
-        CreateRouteResponse resp = routePersistService.create(academyId, req);
+    public ResponseEntity<RouteCreateResponse> create(@PathVariable UUID academyId,
+                                                      @RequestBody RouteCreateRequest req) {
+        RouteCreateResponse resp = routePersistService.create(academyId, req);
         return ResponseEntity.status(HttpStatus.CREATED).body(resp);
     }
 
     @GetMapping("/academies/{academyId}")
-    public List<RouteListItem> listByAcademy(@PathVariable UUID academyId) {
+    public List<RouteSummaryResponse> listByAcademy(@PathVariable UUID academyId) {
         return routeQueryService.listByAcademy(academyId);
     }
 

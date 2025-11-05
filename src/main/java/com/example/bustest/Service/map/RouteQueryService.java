@@ -2,7 +2,7 @@ package com.example.bustest.Service.map;
 
 import com.example.bustest.dto.map.CoordinateDTO;
 import com.example.bustest.dto.map.RouteDetailResponse;
-import com.example.bustest.dto.map.RouteListItem;
+import com.example.bustest.dto.map.RouteSummaryResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
@@ -27,12 +27,12 @@ public class RouteQueryService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public List<RouteListItem> listByAcademy(UUID academyId) {
+    public List<RouteSummaryResponse> listByAcademy(UUID academyId) {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery("SELECT id, name, total_time, created_at FROM routes WHERE academy_id = :aid ORDER BY created_at DESC")
                 .setParameter("aid", academyId)
                 .getResultList();
-        List<RouteListItem> out = new ArrayList<>();
+        List<RouteSummaryResponse> out = new ArrayList<>();
         for (Object[] r : rows) {
             UUID id = (UUID) r[0];
             String name = (String) r[1];
@@ -42,7 +42,7 @@ public class RouteQueryService {
             long secs = toSeconds(timeObj);
             Instant createdAt = toInstant(createdObj);
 
-            out.add(new RouteListItem(id, name, secs, createdAt));
+            out.add(new RouteSummaryResponse(id, name, secs, createdAt));
         }
         return out;
     }
