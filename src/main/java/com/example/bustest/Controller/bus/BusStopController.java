@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,26 +15,35 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("/api/busstop") // 매핑명은 일단 임의로 설정했음
 @CrossOrigin(origins = "*")
 
-//매핑은 우선 임의로 설정
 public class BusStopController {
+
+
 
     private final BusStopService busStopService;
 
     // 학원별 정류장 조회
     @GetMapping("/academies/{academyId}/bus-stops")
-    public Page<BusStopSummaryResponse> list(@PathVariable UUID academyId, @PageableDefault(size = 10, sort = "createdAt")  Pageable pageable
-    ) {
+    public Page<BusStopSummaryResponse> list(@PathVariable UUID academyId, Pageable pageable) {
         return busStopService.pageByAcademy(academyId, pageable);
     }
 
     // 정류장 생성
     @PostMapping("/academies/{academyId}/bus-stops")
     @ResponseStatus(HttpStatus.CREATED)
-    public BusStopSummaryResponse create(@PathVariable UUID academyId,@Valid @RequestBody BusStopCreateRequest busReq) {
-        return busStopService.create(busReq);
+    public BusStopCreateRequest create(@PathVariable UUID academyId, @Valid @RequestBody BusStopCreateRequest busReq) {
+        busReq.setAcademyId(academyId);
+        BusStopSummaryResponse saved = busStopService.create(busReq);
+        return BusStopCreateRequest.builder()
+                .academyId(saved.getAcademyId())
+                .name(saved.getName())
+                .latitude(saved.getLatitude())
+                .longitude(saved.getLongitude())
+                .photoUrl(saved.getPhotoUrl())
+                .isActive(saved.getIsActive())
+                .build();
     }
     //수정
     @PatchMapping("/bus-stops/{id}")

@@ -54,7 +54,7 @@ public class Academy {
     List<OperationInfo> operationInfos;
 
     @JdbcTypeCode(SqlTypes.GEOMETRY)
-    @Column(name = "geom", nullable = false, columnDefinition = "geography(Point,4326)")
+    @Column(name = "geom", nullable = false, columnDefinition = "geometry(Point,4326)")
     private Point geom; // service에서 create할 때 계산하고 넣을 예정
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -79,13 +79,13 @@ public class Academy {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
 
-        if (geom == null) throw new BaseException(ErrorCode.BUS_SOP_DESTINATION_NOT_FOUND);
+        if (geom == null) throw new BaseException(ErrorCode.BUS_STOP_DESTINATION_NOT_FOUND);
         if (geom.getSRID() != 4326) geom.setSRID(4326);
         this.geom = geom;
     }
 
     public void setGeom(Point geom) {
-        if (geom == null) throw new BaseException(ErrorCode.BUS_SOP_DESTINATION_NOT_FOUND);
+        if (geom == null) throw new BaseException(ErrorCode.BUS_STOP_DESTINATION_NOT_FOUND);
         if (geom.getSRID() != 4326) geom.setSRID(4326);
         this.geom = geom;
         this.updatedAt = Instant.now();

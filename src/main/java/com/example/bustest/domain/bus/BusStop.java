@@ -35,7 +35,7 @@ public class BusStop {
     private String name;
 
     @JdbcTypeCode(SqlTypes.GEOMETRY)
-    @Column(name = "geom", nullable = false, columnDefinition = "geography(Point,4326)")
+    @Column(name = "geom", nullable = false, columnDefinition = "geometry(Point,4326)")
     private Point geom; // 위경도를 point로 저장
 
 

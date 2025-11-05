@@ -5,7 +5,8 @@
 // 3) 노선등록 모드로 정류장 선택 후, 서버에 길찾기 요청하여 폴리라인(경로) 그리기
 
 let map;
-const markersByType = { STUDENT: [], STOP: [] };
+// BusStop 기반으로 전환: STOP만 사용
+const markersByType = { STOP: [] };
 let allMarkers = [];
 let allInfoWindows = [];
 // id -> { marker, infowindow, item }
@@ -17,6 +18,7 @@ let routeMode = false;            // 노선등록 모드 on/off
 let selectedStopIds = [];         // 사용자가 선택한 정류장 id 순서 리스트
 let currentPolyline = null;       // 지도에 그려진 경로 선
 let routeOverlays = [];           // 번호 오버레이(CustomOverlay) 보관
+let savedRoutes = [];             // 저장된 노선 목록 캐시
 
 function initMap() {
   const container = document.getElementById('map');
@@ -38,7 +40,26 @@ function markerImageForType(type) {
   return new kakao.maps.MarkerImage(src, size);
 }
 
+// UI에서 학원 ID를 설정하고 마커 로드
+function setAcademyAndLoad() {
+  const input = document.getElementById('academyId');
+  if (!input) return;
+  const v = input.value.trim();
+  if (!v) {
+    alert('학원 ID(UUID)를 입력하세요.');
+    return;
+  }
+  window.ACADEMY_ID = v;
+  loadMarkers();
+}
+
 async function loadMarkers() {
+  // Academy ID는 전역(window.ACADEMY_ID)에서 주입받습니다.
+  const ACADEMY_ID = window.ACADEMY_ID || null;
+  if (!ACADEMY_ID) {
+    console.warn('ACADEMY_ID가 설정되지 않았습니다. window.ACADEMY_ID에 UUID를 설정하세요.');
+    return;
+  }
   try {
     // 이전 상태 정리
     allMarkers.forEach(m => m.setMap(null));
@@ -51,24 +72,29 @@ async function loadMarkers() {
       markersByType[k] = [];
     });
 
-    const res = await fetch('/api/locations');
-    const data = await res.json();
+    // BusStop 목록 조회 (페이지 크게 가져와 일괄 표시)
+    const res = await fetch(`/api/busstop/academies/${ACADEMY_ID}/bus-stops?page=0&size=1000`);
+    const page = await res.json();
+    const data = page.content || [];
 
     data.forEach(item => {
-      const position = new kakao.maps.LatLng(item.lat, item.lng);
+      const lat = Number(item.latitude);
+      const lng = Number(item.longitude);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+      const position = new kakao.maps.LatLng(lat, lng);
       const marker = new kakao.maps.Marker({
         map: map,
         position: position,
-        image: markerImageForType(item.type)
+        image: markerImageForType('STOP')
       });
 
       const iwContent = `<div style="padding:5px;">
-        <div><strong>${item.title}</strong></div>
-        <div>(${item.type})</div>
-        <div>${item.lat.toFixed(5)}, ${item.lng.toFixed(5)}</div>
+        <div><strong>${item.name ?? ''}</strong></div>
+        <div>(BUS STOP)</div>
+        <div>${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
         <div style="margin-top:6px; text-align:right;">
-          <button type="button" style="padding:4px 6px;" onclick="openEditPanelById(${item.id})">편집</button>
-          <button type="button" style="padding:4px 6px; margin-left:4px;" onclick="addStopToRoute(${item.id})">경로추가</button>
+          <button type="button" style="padding:4px 6px;" onclick="openEditPanelById('${item.id}')">편집</button>
+          <button type="button" style="padding:4px 6px; margin-left:4px;" onclick="addStopToRoute('${item.id}')">경로추가</button>
         </div>
       </div>`;
       const infowindow = new kakao.maps.InfoWindow({ content: iwContent });
@@ -79,16 +105,13 @@ async function loadMarkers() {
         infowindow.open(map, marker);
       });
 
-      const t = (item.type === 'STOP') ? 'STOP' : 'STUDENT';
-      (markersByType[t] ||= []).push(marker);
+      (markersByType['STOP'] ||= []).push(marker);
       allMarkers.push(marker);
-      markerStoreById.set(item.id, { marker, infowindow, item });
+      markerStoreById.set(item.id, { marker, infowindow, item: { id: item.id, title: item.name, lat, lng, type: 'STOP' } });
     });
 
     // 타입 토글 반영
-    const studentChecked = document.getElementById('toggleStudent')?.checked ?? true;
     const stopChecked = document.getElementById('toggleStop')?.checked ?? true;
-    toggleType('STUDENT', studentChecked);
     toggleType('STOP', stopChecked);
   } catch (e) {
     console.error('마커 로드 실패', e);
@@ -100,27 +123,122 @@ async function loadMarkers() {
   }
 }
 
+// ----- 저장된 노선 목록/상세 -----
+async function loadRoutes() {
+  const ACADEMY_ID = window.ACADEMY_ID || document.getElementById('academyId')?.value.trim();
+  if (!ACADEMY_ID) {
+    alert('학원 UUID가 필요합니다. 상단에 입력하세요.');
+    return;
+  }
+  try {
+    const res = await fetch(`/api/routes/academies/${ACADEMY_ID}`);
+    if (!res.ok) {
+      const msg = await res.text();
+      alert('노선 목록 조회 실패: ' + msg);
+      return;
+    }
+    const list = await res.json();
+    savedRoutes = list || [];
+    const sel = document.getElementById('routeList');
+    sel.innerHTML = '';
+    savedRoutes.forEach(r => {
+      const min = Math.round((r.totalTimeSeconds || 0) / 60);
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = `${r.name} (${min}분)`;
+      sel.appendChild(opt);
+    });
+    if (savedRoutes.length === 0) {
+      const opt = document.createElement('option');
+      opt.textContent = '저장된 노선이 없습니다';
+      sel.appendChild(opt);
+    }
+  } catch (e) {
+    alert('노선 목록 오류: ' + e);
+  }
+}
+
+async function showSelectedRoute() {
+  const sel = document.getElementById('routeList');
+  const id = sel?.value;
+  if (!id) {
+    alert('먼저 노선을 선택하세요.');
+    return;
+  }
+  try {
+    const res = await fetch(`/api/routes/${id}`);
+    if (!res.ok) {
+      const msg = await res.text();
+      alert('노선 조회 실패: ' + msg);
+      return;
+    }
+    const data = await res.json();
+    const path = (data.path || []).map(p => new kakao.maps.LatLng(p.latitude ?? p.lat ?? p.y, p.longitude ?? p.lng ?? p.x));
+    if (path.length === 0) {
+      alert('저장된 경로가 비어 있습니다.');
+      return;
+    }
+    if (currentPolyline) currentPolyline.setMap(null);
+    currentPolyline = new kakao.maps.Polyline({
+      map,
+      path,
+      strokeWeight: 6,
+      strokeColor: '#007bff',
+      strokeOpacity: 0.9,
+      strokeStyle: 'solid'
+    });
+    currentPolyline.setMap(map);
+    const bounds = new kakao.maps.LatLngBounds();
+    path.forEach(p => bounds.extend(p));
+    map.setBounds(bounds);
+    if (data.distanceMeters || data.durationSeconds) {
+      const km = (data.distanceMeters / 1000).toFixed(1);
+      const min = Math.round((data.durationSeconds || 0) / 60);
+      alert(`저장 노선 – 총 거리 ${km}km, 예상 ${min}분`);
+    }
+  } catch (e) {
+    alert('노선 표시 오류: ' + e);
+  }
+}
+
 async function submitLocation() {
+  const ACADEMY_ID = window.ACADEMY_ID || document.getElementById('academyId')?.value.trim();
   const title = document.getElementById('title').value.trim();
   const address = document.getElementById('address').value.trim();
-  const type = document.getElementById('type').value;
+  if (!ACADEMY_ID) {
+    alert('학원 UUID가 필요합니다. 상단에 입력하세요.');
+    return;
+  }
   if (!title || !address) {
     alert('명칭과 주소를 입력해 주세요');
     return;
   }
   try {
-    const res = await fetch('/api/locations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, address, type })
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(address, async (result, status) => {
+      if (status === kakao.maps.services.Status.OK && result && result.length > 0) {
+        const lat = parseFloat(result[0].y);
+        const lng = parseFloat(result[0].x);
+        if (!isFinite(lat) || !isFinite(lng)) {
+          alert('좌표 파싱 실패');
+          return;
+        }
+        const res = await fetch(`/api/busstop/academies/${ACADEMY_ID}/bus-stops`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: title, latitude: lat, longitude: lng })
+        });
+        if (!res.ok) {
+          const msg = await res.text();
+          alert('등록 실패: ' + msg);
+          return;
+        }
+        alert('등록 성공! 마커를 새로고침합니다');
+        loadMarkers();
+        return;
+      }
+      alert('주소 지오코딩 실패');
     });
-    if (res.ok) {
-      alert('등록 성공! 마커를 새로고침합니다');
-      loadMarkers();
-    } else {
-      const msg = await res.text();
-      alert('등록 실패: ' + msg);
-    }
   } catch (e) {
     alert('요청 실패: ' + e);
   }
@@ -132,7 +250,7 @@ kakao.maps.load(initMap);
 function ensureTypeToggleUI() {
   const panelDiv = document.querySelector('.panel > div');
   if (!panelDiv) return;
-  if (document.getElementById('toggleStudent')) return;
+  if (document.getElementById('toggleStop')) return;
 
   const mkLabel = (id, text, onChange) => {
     const label = document.createElement('label');
@@ -147,9 +265,6 @@ function ensureTypeToggleUI() {
     return label;
   };
 
-  panelDiv.appendChild(
-    mkLabel('toggleStudent', 'STUDENT 표시', (checked) => toggleType('STUDENT', checked))
-  );
   panelDiv.appendChild(
     mkLabel('toggleStop', 'STOP 표시', (checked) => toggleType('STOP', checked))
   );
@@ -181,10 +296,6 @@ function ensureEditPanelUI() {
     <div style="margin-bottom:6px; font-weight:600;">마커 편집</div>
     <div>
       <input id="editTitle" placeholder="명칭" size="24" />
-      <select id="editType">
-        <option value="STUDENT">STUDENT</option>
-        <option value="STOP">STOP</option>
-      </select>
     </div>
     <div style="margin-top:6px;">
       <button id="btnSaveEdit" type="button">저장</button>
@@ -198,12 +309,11 @@ function ensureEditPanelUI() {
   document.getElementById('btnSaveEdit').addEventListener('click', async () => {
     if (!currentEditItem) return;
     const title = document.getElementById('editTitle').value.trim();
-    const type = document.getElementById('editType').value;
     try {
-      const res = await fetch(`/api/locations/${currentEditItem.id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/busstop/bus-stops/${currentEditItem.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, type })
+        body: JSON.stringify({ name: title })
       });
       if (!res.ok) {
         const msg = await res.text();
@@ -223,7 +333,7 @@ function ensureEditPanelUI() {
     if (!currentEditItem) return;
     if (!confirm('정말 삭제하시겠습니까?')) return;
     try {
-      const res = await fetch(`/api/locations/${currentEditItem.id}`, {
+      const res = await fetch(`/api/busstop/bus-stops/${currentEditItem.id}`, {
         method: 'DELETE'
       });
       if (!res.ok) {
@@ -243,17 +353,12 @@ function ensureEditPanelUI() {
 }
 
 function openEditPanelById(id) {
-  fetch('/api/locations')
-    .then(r => r.json())
-    .then(list => {
-      const found = list.find(x => x.id === id);
-      if (!found) {
-        alert('대상을 찾을 수 없습니다.');
-        return;
-      }
-      openEditPanel(found);
-    })
-    .catch(e => alert('아이템 조회 오류: ' + e));
+  const store = markerStoreById.get(id);
+  if (!store) {
+    alert('대상을 찾을 수 없습니다.');
+    return;
+  }
+  openEditPanel(store.item);
 }
 
 function openEditPanel(item) {
@@ -261,7 +366,6 @@ function openEditPanel(item) {
   const panel = document.getElementById('editPanel');
   if (!panel) return;
   document.getElementById('editTitle').value = item.title || '';
-  document.getElementById('editType').value = item.type || 'STUDENT';
   panel.style.display = 'block';
 }
 
@@ -306,10 +410,15 @@ async function drawRoute() {
     return;
   }
   try {
-    const res = await fetch('/api/routes/directions', {
+    const ACADEMY_ID = window.ACADEMY_ID || document.getElementById('academyId')?.value.trim();
+    if (!ACADEMY_ID) {
+      alert('학원 UUID가 필요합니다. 상단에 입력하세요.');
+      return;
+    }
+    const res = await fetch('/api/routes/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderedStopIds: selectedStopIds })
+      body: JSON.stringify({ orderedBusStopIds: selectedStopIds })
     });
     if (!res.ok) {
       const t = await res.text();
@@ -344,6 +453,21 @@ async function drawRoute() {
       const min = Math.round((data.durationSeconds || 0) / 60);
       alert(`총 거리 ${km}km, 예상 ${min}분`);
     }
+
+    // 경로 저장 호출 (자동 저장)
+    const routeName = (document.getElementById('routeName')?.value || '').trim();
+    const saveRes = await fetch(`/api/routes/academies/${ACADEMY_ID}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: routeName, orderedBusStopIds: selectedStopIds })
+    });
+    if (!saveRes.ok) {
+      const msg = await saveRes.text();
+      alert('경로 저장 실패: ' + msg);
+      return;
+    }
+    const saved = await saveRes.json();
+    alert('경로 저장 완료! Route ID: ' + saved.routeId);
   } catch (e) {
     alert('경로 처리 오류: ' + e);
   }

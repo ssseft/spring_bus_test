@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS bus_stops (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     academy_id UUID NOT NULL REFERENCES academies(id),
     name VARCHAR(255) NOT NULL,
-    geom GEOGRAPHY(Point,4326) NOT NULL,
+    geom geometry(Point,4326) NOT NULL,
     photo_url VARCHAR(500),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -16,6 +16,7 @@ import org.locationtech.jts.geom.PrecisionModel;
  * 정류장 생성 DTO
  */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -39,7 +40,6 @@ public class BusStopCreateRequest {
     @DecimalMax(value = "180.0", inclusive = true, message = "경도는 180 이하이어야 합니다.")
     private BigDecimal longitude;  // DECIMAL(11,8)
 
-    @Size(max = 500, message = "사진 URL은 최대 500자입니다.")
     private String photoUrl;
 
     private Boolean isActive;

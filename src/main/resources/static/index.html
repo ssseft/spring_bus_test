@@ -10,13 +10,18 @@
     .panel { padding: 10px; }
     input, select, button { margin: 4px; padding: 6px; }
   </style>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <script type="text/javascript"
-          src="//dapi.kakao.com/v2/maps/sdk.js?appkey=651a42d67f9cd74a1fcbb557bb60907f&autoload=false"></script>
+          src="//dapi.kakao.com/v2/maps/sdk.js?appkey=651a42d67f9cd74a1fcbb557bb60907f&libraries=services&autoload=false"></script>
 </head>
 <body>
 <div class="panel">
   <h3>Bunncet + KaKaoMap</h3>
   <div>
+    <input id="academyId" placeholder="학원 UUID (필수)" size="38" />
+    <button onclick="setAcademyAndLoad()">버스정류장 불러오기</button>
+    <br/>
+    <input id="routeName" placeholder="노선명 (선택)" size="24" />
     <input id="title" placeholder="명칭 (예: 홍길동 집)" size="24" />
     <input id="address" placeholder="주소 (지오코딩)" size="40" />
     <select id="type">
@@ -29,6 +34,10 @@
     <button onclick="toggleRouteMode()" id="btnRouteMode">노선등록 모드: OFF</button>
     <button onclick="drawRoute()">경로 그리기</button>
     <button onclick="clearRoute()">경로 지우기</button>
+    <!-- 저장된 노선 확인 -->
+    <button onclick="loadRoutes()">노선 목록 불러오기</button>
+    <select id="routeList" style="min-width:240px;"></select>
+    <button onclick="showSelectedRoute()">선택 노선 표시</button>
   </div>
 </div>
 <div id="map"></div>
@@ -36,4 +45,3 @@
 <script src="/script.js"></script>
 </body>
 </html>
-
