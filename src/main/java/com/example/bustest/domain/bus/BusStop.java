@@ -66,7 +66,6 @@ public class BusStop {
         this.geom = geom;
     }
 
-
     // 나중에 위도,경도 호출할 때 사용
     public BigDecimal getLatitude() {
         return BigDecimal.valueOf(geom.getY());

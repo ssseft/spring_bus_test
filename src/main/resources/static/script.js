@@ -200,49 +200,36 @@ async function showSelectedRoute() {
     alert('노선 표시 오류: ' + e);
   }
 }
-
 async function submitLocation() {
-  const ACADEMY_ID = window.ACADEMY_ID || document.getElementById('academyId')?.value.trim();
-  const title = document.getElementById('title').value.trim();
-  const address = document.getElementById('address').value.trim();
-  if (!ACADEMY_ID) {
-    alert('학원 UUID가 필요합니다. 상단에 입력하세요.');
-    return;
-  }
-  if (!title || !address) {
-    alert('명칭과 주소를 입력해 주세요');
-    return;
-  }
-  try {
-    const geocoder = new kakao.maps.services.Geocoder();
-    geocoder.addressSearch(address, async (result, status) => {
-      if (status === kakao.maps.services.Status.OK && result && result.length > 0) {
-        const lat = parseFloat(result[0].y);
-        const lng = parseFloat(result[0].x);
-        if (!isFinite(lat) || !isFinite(lng)) {
-          alert('좌표 파싱 실패');
-          return;
-        }
-        const res = await fetch(`/api/busstop/academies/${ACADEMY_ID}/bus-stops`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: title, latitude: lat, longitude: lng })
-        });
-        if (!res.ok) {
-          const msg = await res.text();
-          alert('등록 실패: ' + msg);
-          return;
-        }
-        alert('등록 성공! 마커를 새로고침합니다');
-        loadMarkers();
+    const ACADEMY_ID = window.ACADEMY_ID || document.getElementById('academyId')?.value.trim();
+    const title = document.getElementById('title').value.trim();
+    const address = document.getElementById('address').value.trim();
+    if (!ACADEMY_ID) {
+        alert('학원 UUID가 필요합니다. 상단에 입력하세요.');
         return;
-      }
-      alert('주소 지오코딩 실패');
-    });
-  } catch (e) {
-    alert('요청 실패: ' + e);
-  }
+    }
+    if (!title || !address) {
+        alert('명칭과 주소를 입력해 주세요');
+        return;
+    }
+    try {
+        const res = await fetch(`/api/busstop/academies/${ACADEMY_ID}/bus-stops/geocode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: title, address })
+        });
+        if (res.ok) {
+            alert('등록 성공! 마커를 새로고침합니다');
+            loadMarkers();
+        } else {
+            const msg = await res.text();
+            alert('등록 실패: ' + msg);
+        }
+    } catch (e) {
+        alert('요청 실패: ' + e);
+    }
 }
+
 
 // Kakao JS SDK autoload=false
 kakao.maps.load(initMap);

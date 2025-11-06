@@ -29,8 +29,8 @@ public class RouteQueryService {
 
     public List<RouteSummaryResponse> listByAcademy(UUID academyId) {
         @SuppressWarnings("unchecked")
-        List<Object[]> rows = em.createNativeQuery("SELECT id, name, total_time, created_at FROM routes WHERE academy_id = :aid ORDER BY created_at DESC")
-                .setParameter("aid", academyId)
+        List<Object[]> rows = em.createNativeQuery("SELECT id, name, total_time, created_at FROM routes WHERE academy_id = ?1 ORDER BY created_at DESC")
+                .setParameter(1, academyId)
                 .getResultList();
         List<RouteSummaryResponse> out = new ArrayList<>();
         for (Object[] r : rows) {

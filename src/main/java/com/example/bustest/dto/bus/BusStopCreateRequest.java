@@ -22,8 +22,9 @@ import org.locationtech.jts.geom.PrecisionModel;
 @Builder
 public class BusStopCreateRequest {
 
-    /** 소속 학원 ID (필수) */
-    @NotNull(message = "academyId는 필수입니다.")
+    /** 소속 학원 ID
+     * - 컨트롤러에서 PathVariable로 설정되므로 요청 바디에서는 생략 가능
+     */
     private UUID academyId;
 
     @NotBlank(message = "정류장 이름은 필수입니다.")
