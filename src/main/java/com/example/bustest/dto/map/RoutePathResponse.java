@@ -1,5 +1,6 @@
 package com.example.bustest.dto.map;
 
+import lombok.Value;
 import java.util.List;
 
 /**
@@ -9,23 +10,9 @@ import java.util.List;
  * - distanceMeters: 총 이동 거리(미터)
  * - durationSeconds: 총 소요 시간(초)
  */
+@Value
 public class RoutePathResponse {
-    private List<CoordinateDTO> path;
-    private long distanceMeters;
-    private long durationSeconds;
-
-    public RoutePathResponse() {}
-
-    public RoutePathResponse(List<CoordinateDTO> path, long distanceMeters, long durationSeconds) {
-        this.path = path;
-        this.distanceMeters = distanceMeters;
-        this.durationSeconds = durationSeconds;
-    }
-
-    public List<CoordinateDTO> getPath() { return path; }
-    public void setPath(List<CoordinateDTO> path) { this.path = path; }
-    public long getDistanceMeters() { return distanceMeters; }
-    public void setDistanceMeters(long distanceMeters) { this.distanceMeters = distanceMeters; }
-    public long getDurationSeconds() { return durationSeconds; }
-    public void setDurationSeconds(long durationSeconds) { this.durationSeconds = durationSeconds; }
+    List<CoordinateDTO> path;
+    long distanceMeters;
+    long durationSeconds;
 }

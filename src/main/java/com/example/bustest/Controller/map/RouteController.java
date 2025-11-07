@@ -25,29 +25,29 @@ public class RouteController {
 
     // Preview (BusStop 기반 / UUID)
     @PostMapping({"/preview", "/directions-busstops"})
-    public ResponseEntity<?> previewByBusStops(@RequestBody RouteCreateRequest req) {
+    public ResponseEntity<RoutePathResponse> previewByBusStops(@RequestBody RouteCreateRequest req) {
         List<UUID> ids = Optional.ofNullable(req.getOrderedBusStopIds()).orElse(Collections.emptyList());
         if (ids.size() < 2) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("At least 2 bus stops required");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         Map<UUID, BusStop> byId = busStopRepository.findAllById(ids)
                 .stream().collect(Collectors.toMap(BusStop::getId, it -> it));
 
-        List<CoordinateDTO> orderedCoords = new ArrayList<>();
-        for (UUID id : ids) {
-            BusStop bs = byId.get(id);
-            if (bs == null) continue;
-            orderedCoords.add(new CoordinateDTO(bs.getLatitude().doubleValue(), bs.getLongitude().doubleValue()));
+        // 존재하지 않는 정류장 ID가 있으면 명시적으로 오류 반환
+        List<UUID> missing = ids.stream().filter(id -> !byId.containsKey(id)).toList();
+        if (!missing.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        if (orderedCoords.size() < 2) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Valid bus stop coordinates fewer than 2");
-        }
+        List<CoordinateDTO> orderedCoords = ids.stream()
+                .map(byId::get)
+                .map(bs -> new CoordinateDTO(bs.getLatitude().doubleValue(), bs.getLongitude().doubleValue()))
+                .toList();
 
         return naviApiService.directionsByOrderedCoords(orderedCoords)
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Directions API failed"));
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_GATEWAY).build());
     }
 
     @PostMapping("/academies/{academyId}")

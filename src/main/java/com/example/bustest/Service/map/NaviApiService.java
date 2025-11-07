@@ -26,6 +26,8 @@ import java.util.Optional;
  *
  * 주의
  * - Kakao 좌표는 x=경도(lng), y=위도(lat) 입니다. 화면/내부에서는 위도(lat)->y, 경도(lng)->x 순서로 맞춰줍니다.
+ *
+ * 운행 부분에 쓰일 수 있기 때문에 RouteService하고 구분을 하였음. 만약 후에 사용되지 않는다면 합칠 예정.
  */
 @Service
 public class NaviApiService {

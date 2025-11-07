@@ -19,7 +19,7 @@ import java.util.Optional;
 
 @Service
 public class KakaoApiService {
-    private final WebClient webClient; // 호환성 유지를 위해 보관(비동기 HTTP 클라이언트)
+    private final WebClient webClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
