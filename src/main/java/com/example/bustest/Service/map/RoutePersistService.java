@@ -55,12 +55,32 @@ public class RoutePersistService {
                 .map(bs -> new CoordinateDTO(bs.getLatitude().doubleValue(), bs.getLongitude().doubleValue()))
                 .toList();
 
+        // 1) 전체 경로 호출: 경로 원본(JSON) 저장 및 응답용 summary 확보
         NaviResult navi = naviApiService.directionsWithRaw(coords)
                 .orElseThrow(() -> new IllegalStateException("Directions API failed"));
-
         RoutePathResponse summary = navi.getSummary();
-        long duration = summary.getDurationSeconds();
-        LocalTime total = LocalTime.ofSecondOfDay(Math.floorMod(duration, 24 * 3600));
+
+        // 2) 구간별(인접 정류장 쌍) 호출: 도착 오프셋(누적 시간) 계산
+        List<Long> segmentDurations = new ArrayList<>();
+        for (int i = 0; i + 1 < coords.size(); i++) {
+            final int segIndex = i + 1;
+            List<CoordinateDTO> seg = List.of(coords.get(i), coords.get(i + 1));
+            long segDuration = naviApiService.directionsByOrderedCoords(seg)
+                    .map(RoutePathResponse::getDurationSeconds)
+                    .orElseThrow(() -> new IllegalStateException("Directions API failed for segment: " + segIndex));
+            segmentDurations.add(segDuration);
+        }
+
+        // 누적 도착 오프셋 계산 (첫 정류장은 0초)
+        List<Long> arrivalOffsets = new ArrayList<>();
+        arrivalOffsets.add(0L);
+        long running = 0L;
+        for (Long seg : segmentDurations) {
+            running += seg != null ? seg : 0L;
+            arrivalOffsets.add(running);
+        }
+        long totalDurationSeconds = running;
+        LocalTime total = LocalTime.ofSecondOfDay(Math.floorMod(totalDurationSeconds, 24 * 3600));
 
         UUID routeId = UUID.randomUUID();
         String name = (req.getName() == null || req.getName().isBlank())
@@ -79,22 +99,30 @@ public class RoutePersistService {
                     .setParameter("totalTime", Time.valueOf(total))
                     .executeUpdate();
 
-            // route_stops insert (순서 1부터)
+            // route_stops insert (순서 1부터), 도착 오프셋을 LocalTime으로 저장
             for (int i = 0; i < orderedStops.size(); i++) {
                 BusStop bs = orderedStops.get(i);
+                long offsetSec = arrivalOffsets.get(i);
+                LocalTime offsetTime = LocalTime.ofSecondOfDay(Math.floorMod(offsetSec, 24 * 3600));
+
                 em.createNativeQuery("INSERT INTO route_stops (id, route_id, stop_id, stop_order, start_to_arrive_time, created_at, updated_at) " +
                                 "VALUES (:id, :routeId, :stopId, :ord, :sta, NOW(), NOW())")
                         .setParameter("id", UUID.randomUUID())
                         .setParameter("routeId", routeId)
                         .setParameter("stopId", bs.getId())
                         .setParameter("ord", i + 1)
-                        .setParameter("sta", Time.valueOf(LocalTime.MIDNIGHT))
+                        .setParameter("sta", Time.valueOf(offsetTime))
                         .executeUpdate();
             }
         } catch (Exception e) {
             throw new IllegalStateException("Route persist failed", e);
         }
 
-        return new RouteCreateResponse(routeId, summary);
+        return new RouteCreateResponse(
+                routeId,
+                summary.getPath(),
+                summary.getDistanceMeters(),
+                summary.getDurationSeconds()
+        );
     }
 }
