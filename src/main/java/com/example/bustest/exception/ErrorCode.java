@@ -28,6 +28,16 @@ public enum ErrorCode {
     BUS_STOP_NOT_FOUND(HttpStatus.NOT_FOUND, "BUS_STOP-001", "정류장을 찾을 수 없습니다."),
     BUS_STOP_DESTINATION_NOT_FOUND(HttpStatus.NOT_FOUND, "BUS_STOP-002", "위치를 찾을 수 없습니다."),
 
+    // Route 관련 에러
+    ROUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROUTE-001", "노선을 찾을 수 없습니다."),
+
+    //Schedule 관련 에러
+    SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCHEDULE-001", "스케줄을 찾을 수 없습니다."),
+    SCHEDULE_DAILY_PLAN_NOT_FOUND(HttpStatus.NOT_FOUND, "SCHEDULE_DAILY_PLAN-001", "일자별 스케줄 계획을 찾을 수 없습니다."),
+
+    // Student 관련 에러
+    STUDENT_NOT_FOUND(HttpStatus.NOT_FOUND, "STUDENT-001", "학생을 찾을 수 없습니다."),
+
     // 일반 에러
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON-001", "서버 내부 오류가 발생했습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON-002", "잘못된 입력 값입니다.");
