@@ -34,9 +34,12 @@ public enum ErrorCode {
     //Schedule 관련 에러
     SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCHEDULE-001", "스케줄을 찾을 수 없습니다."),
     SCHEDULE_DAILY_PLAN_NOT_FOUND(HttpStatus.NOT_FOUND, "SCHEDULE_DAILY_PLAN-001", "일자별 스케줄 계획을 찾을 수 없습니다."),
+    SCHEDULE_DAILY_PLAN_CANCELED(HttpStatus.CONFLICT, "SCHEDULE_DAILY_PLAN-002", "해당 일자 계획은 운행 취소 상태입니다."),
 
     // Student 관련 에러
     STUDENT_NOT_FOUND(HttpStatus.NOT_FOUND, "STUDENT-001", "학생을 찾을 수 없습니다."),
+    SCHEDULE_STUDENT_ALREADY_RESERVED(HttpStatus.CONFLICT, "SCHEDULE_STUDENT-001", "이미 해당 플랜에 예약되어 있습니다."),
+    SCHEDULE_STUDENT_RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "SCHEDULE_STUDENT-002", "학생 예약을 찾을 수 없습니다."),
 
     // 일반 에러
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON-001", "서버 내부 오류가 발생했습니다."),

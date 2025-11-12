@@ -8,12 +8,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "schedule_students")
+@Table(
+    name = "schedule_students",
+    uniqueConstraints = @UniqueConstraint(name = "uq_schedule_student", columnNames = {"schedule_id", "student_id"})
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScheduleStudent {
@@ -24,27 +25,16 @@ public class ScheduleStudent {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_daily_plan_id", nullable = false)
-    private ScheduleDailyPlan scheduleDailyPlan;
+    @JoinColumn(name = "schedule_id", nullable = false)
+    private Schedule schedule;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    // 조회 성능을 위해 여기에도 중복 저장(굳이 필요 없으면 지워도 될거같긴 함)
-    @Column(name = "date", nullable = false)
-    private LocalDate date;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bus_stop_id", nullable = false)
     private BusStop busStop;
-
-    @Column(name = "planned_time", nullable = false)
-    private LocalTime plannedTime;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "schedule_status", nullable = false)
-    private ScheduleStatus scheduleStatus; //cancel,reserve로 구분
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -53,34 +43,16 @@ public class ScheduleStudent {
     private Instant updatedAt = Instant.now();
 
     @Builder
-    public ScheduleStudent(ScheduleDailyPlan scheduleDailyPlan,
-                           Student student,
-                           LocalDate date,
-                           BusStop busStop,
-                           LocalTime plannedTime,
-                           ScheduleStatus scheduleStatus) {
-        this.scheduleDailyPlan = scheduleDailyPlan;
+    public ScheduleStudent(Schedule schedule, Student student, BusStop busStop) {
+        this.schedule = schedule;
         this.student = student;
-        this.date = date;
         this.busStop = busStop;
-        this.plannedTime = plannedTime;
-        this.scheduleStatus = scheduleStatus;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 
-    public void update(BusStop busStop,
-                       LocalTime plannedTime,
-                       ScheduleStatus scheduleStatus) {
+    public void update(BusStop busStop) {
         if (busStop != null) this.busStop = busStop;
-        if (plannedTime != null) this.plannedTime = plannedTime;
-        if (scheduleStatus != null) this.scheduleStatus = scheduleStatus;
         this.updatedAt = Instant.now();
     }
-
-    public enum ScheduleStatus {
-        RESERVED,
-        CANCELED
-    }
 }
-

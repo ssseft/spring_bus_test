@@ -97,7 +97,6 @@ public class RouteQueryService {
         if (o instanceof Timestamp ts) return ts.toInstant();
         if (o instanceof OffsetDateTime odt) return odt.toInstant();
         if (o instanceof LocalDateTime ldt) return ldt.toInstant(ZoneOffset.UTC);
-        // Fallback: try parse string
         try {
             return Instant.parse(String.valueOf(o));
         } catch (Exception ignored) {

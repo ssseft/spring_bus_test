@@ -36,7 +36,7 @@ public class ScheduleDailyPlan {
     private Status Status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "route_id")
+    @JoinColumn(name = "route_id", nullable = false)
     private Route route;
 
     @Column(name = "created_at", nullable = false, updatable = false)
