@@ -1,0 +1,17 @@
+spring:
+  docker:
+    compose:
+      enabled: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bunnect
+    username: bunnect
+    password: bunnect
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: debug

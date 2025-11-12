@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -19,7 +17,6 @@ import java.util.Optional;
 
 @Service
 public class KakaoApiService {
-    private final WebClient webClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -32,44 +29,13 @@ public class KakaoApiService {
     @Value("${kakao.api.keyword-url:https://dapi.kakao.com/v2/local/search/keyword.json}")
     private String keywordUrl;
 
-    // 생성자에서 WebClient 주입
-    public KakaoApiService(WebClient.Builder builder) {
-        this.webClient = builder.build();
-    }
-
-    // 주소 문자열을 좌표(위도/경도)로 변환
-    // - Kakao Local REST API 호출
-    // - 응답은 x=경도(longitude), y=위도(latitude)이므로 주의하여 매핑
+    // 주소 문자열을 좌표(위도/경도)로 변환 (java.net.http 사용)
     public Optional<CoordinateDTO> geocodeAddress(String address) {
         if (address == null || address.isBlank()) return Optional.empty();
-
-        String query = URLEncoder.encode(address, StandardCharsets.UTF_8);
-        String url = geocodingUrl + "?query=" + query;
-
-        // Authorization 헤더: "KakaoAK {REST_KEY}"
-        Mono<String> responseMono = webClient.get()
-                .uri(url)
-                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + restApiKey)
-                .retrieve()
-                .bodyToMono(String.class);
-
-        try {
-            String body = responseMono.block();
-            if (body == null) return Optional.empty();
-            JsonNode root = objectMapper.readTree(body);
-            JsonNode documents = root.path("documents");
-            if (!documents.isArray() || documents.isEmpty()) return Optional.empty();
-            JsonNode first = documents.get(0);
-            double x = first.path("x").asDouble(); // 경도
-            double y = first.path("y").asDouble(); // 위도
-            return Optional.of(new CoordinateDTO(y, x));
-        } catch (Exception e) {
-            // 호출/파싱 실패 시 빈 Optional 반환
-            return Optional.empty();
-        }
+        return geocodeByEndpoint(geocodingUrl, address);
     }
 
-    // 주소 지오코딩이 실패하면 키워드 검색으로 보정 시도
+    // 주소 지오코딩 실패하면 키워드검색으로 보정 시도
     public Optional<CoordinateDTO> geocodeWithFallback(String addressOrKeyword) {
         Optional<CoordinateDTO> byAddress = geocodeAddress(addressOrKeyword);
         if (byAddress.isPresent()) return byAddress;
@@ -117,3 +83,4 @@ public class KakaoApiService {
         return geocodeByEndpoint(keywordUrl, address).isPresent();
     }
 }
+

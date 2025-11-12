@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:bunnect}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USER:bunnect}
+    password: ${DB_PASSWORD:bunnect}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+
+server:
+  forward-headers-strategy: framework
+
+logging:
+  level:
+    org.hibernate.SQL: info
