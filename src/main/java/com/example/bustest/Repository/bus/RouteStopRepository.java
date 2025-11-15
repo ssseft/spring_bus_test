@@ -7,5 +7,7 @@ import java.util.UUID;
 
 public interface RouteStopRepository extends JpaRepository<RouteStop, UUID> {
     boolean existsByRoute_IdAndBusStop_Id(UUID routeId, UUID busStopId);
+    java.util.List<RouteStop> findByRoute_IdOrderByStopOrder(UUID routeId);
+    java.util.Optional<RouteStop> findByRoute_IdAndBusStop_Id(UUID routeId, UUID busStopId);
 }
 

@@ -10,14 +10,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-// 스케줄 일자별 계획
+//운행 계획(일자별)
 @Entity
-@Table(name = "schedule_daily_plans",
-       uniqueConstraints = @UniqueConstraint(name = "uq_schedule_date", columnNames = {"schedule_id", "date"}))
+@Table(name = "runs",
+       uniqueConstraints = @UniqueConstraint(name = "uq_run_schedule_date", columnNames = {"schedule_id", "date"}))
 //스케쥴id : date 1:1 보장을 위해 uniqueconstraint추가
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ScheduleDailyPlan {
+public class Run {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -29,14 +29,14 @@ public class ScheduleDailyPlan {
     private Schedule schedule;
 
     @Column(name = "date", nullable = false)
-    private LocalDate date; //이건 YYMMDD로 파싱해서 받을 예정
+    private LocalDate date; //YYMMDD 예정
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private Status Status;
+    @Column(name = "status", nullable = false, length = 32)
+    private RunStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "route_id", nullable = false)
+    @JoinColumn(name = "route_id", nullable = true)
     private Route route;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -46,27 +46,28 @@ public class ScheduleDailyPlan {
     private Instant updatedAt = Instant.now();
 
     @Builder
-    public ScheduleDailyPlan(Schedule schedule,
-                             LocalDate date,
-                             Status Status,
-                             Route route) {
+    public Run(Schedule schedule,
+               LocalDate date,
+               RunStatus status,
+               Route route) {
         this.schedule = schedule;
         this.date = date;
-        this.Status = Status;
-        this.route = route; // nullable
+        this.status = status;
+        this.route = route;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 
-    public void update(Status serviceStatus, Route route) {
-        if (serviceStatus != null) this.Status = serviceStatus;
-        this.route = route; // nullable allowed
+    public void update(RunStatus status, Route route) {
+        if (status != null) this.status = status;
+        this.route = route;
         this.updatedAt = Instant.now();
     }
 
-    public enum Status {
-        OPER,      // 운행
-        CANCELED   // 운행 취소/운행 안함
+    public enum RunStatus {
+        scheduled,
+        in_progress,
+        completed,
+        canceled
     }
 }
-

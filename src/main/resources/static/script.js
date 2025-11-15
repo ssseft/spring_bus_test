@@ -257,6 +257,199 @@ function ensureTypeToggleUI() {
   );
 }
 
+// -----------------------
+// 추가: Schedule/Run/BoardingChange 연동 유틸
+// 기존 기능은 그대로 두고, 호출형 API 함수만 노출합니다.
+// -----------------------
+
+async function apiJson(method, url, body) {
+  const opt = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== undefined) opt.body = JSON.stringify(body);
+  const res = await fetch(url, opt);
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || (res.status + ' ' + res.statusText));
+  }
+  // 일부 204 응답 대비
+  try { return await res.json(); } catch (_) { return null; }
+}
+
+// Schedule API
+window.apiCreateSchedule = async function(req) {
+  // req: { academyId, routeId, name, repeatDays, startTime, endTime, boardingStatus, isActive, assignments? }
+  return apiJson('POST', '/api/schedules', req);
+}
+
+window.apiCreateScheduleWithStudents = async function(req) {
+  // req: { academyId, routeId, name, repeatDays, startTime, boardingStatus, assignments:[{studentId,busStopId}] }
+  return apiJson('POST', '/api/schedules:with-students', req);
+}
+
+window.apiUpdateSchedule = async function(scheduleId, req) {
+  // req: { routeId?, name?, repeatDays?, startTime?, endTime?, boardingStatus?, isActive? }
+  return apiJson('PATCH', `/api/schedules/${scheduleId}`, req);
+}
+
+window.apiActivateSchedule = async function(scheduleId) {
+  await apiJson('POST', `/api/schedules/${scheduleId}:activate`);
+  return true;
+}
+
+window.apiDeactivateSchedule = async function(scheduleId) {
+  await apiJson('POST', `/api/schedules/${scheduleId}:deactivate`);
+  return true;
+}
+
+window.apiGetSchedule = async function(scheduleId) {
+  return apiJson('GET', `/api/schedules/${scheduleId}`);
+}
+
+window.apiListSchedules = async function(academyId) {
+  const q = academyId ? `?academyId=${academyId}` : '';
+  return apiJson('GET', `/api/schedules${q}`);
+}
+
+// Run API (빌드/상태)
+window.apiBuildRuns = async function(scheduleId, from, to) {
+  // from/to: 'YYYY-MM-DD'
+  return apiJson('POST', `/api/schedules/${scheduleId}/runs:build?from=${from}&to=${to}`);
+}
+
+// RunStudent 취소(+필요 시 임시 Route 재생성)
+window.apiCancelRunStudent = async function(runId, studentId) {
+  const data = await apiJson('PATCH', `/api/runs/${runId}/students/${studentId}/cancel`);
+  // 경로가 바뀌었을 수 있으니 지도 갱신을 원하면 아래 훅 사용
+  try { await loadRoutes(); } catch (_) {}
+  return data;
+}
+
+// Boarding Change Request
+window.apiRequestBoardingChange = async function(runId, studentId, toBusStopId, reason) {
+  const body = { toBusStopId, reason };
+  return apiJson('POST', `/api/runs/${runId}/students/${studentId}/boarding-change-requests`, body);
+}
+
+window.apiApproveBoardingChange = async function(requestId, processedBy) {
+  const body = { processedBy };
+  const data = await apiJson('POST', `/api/boarding-change-requests/${requestId}:approve`, body);
+  // 승인 시 임시 Route가 반영되므로 필요하면 경로/마커 재표시
+  try { await loadRoutes(); } catch (_) {}
+  return data;
+}
+
+window.apiRejectBoardingChange = async function(requestId, processedBy, rejectReason) {
+  const body = { processedBy, rejectReason };
+  return apiJson('POST', `/api/boarding-change-requests/${requestId}:reject`, body);
+}
+
+window.apiListBoardingChangesByRun = async function(runId) {
+  return apiJson('GET', `/api/runs/${runId}/boarding-change-requests`);
+}
+
+// ---------------------
+// UI Wrapper functions
+// ---------------------
+
+window.uiCreateSchedule = async function() {
+  try {
+    const academyId = (window.ACADEMY_ID || document.getElementById('academyId')?.value.trim());
+    const routeId = document.getElementById('sch_routeId').value.trim();
+    const name = document.getElementById('sch_name').value.trim();
+    const repeatDays = parseInt(document.getElementById('sch_repeat').value.trim() || '0', 10);
+    const startTime = document.getElementById('sch_start').value.trim();
+    const endTime = document.getElementById('sch_end').value.trim() || null;
+    const boardingStatus = document.getElementById('sch_boarding').value;
+    const isActive = document.getElementById('sch_active').checked;
+    const studentId = (document.getElementById('sch_student')?.value || '').trim();
+    const busStopId = (document.getElementById('sch_busstop')?.value || '').trim();
+    if (!academyId || !routeId || !name || !startTime) {
+      alert('academyId/routeId/name/startTime은 필수입니다');
+      return;
+    }
+    const req = { academyId, routeId, name, repeatDays, startTime, endTime, boardingStatus, isActive };
+    if (studentId && busStopId) {
+      req.assignments = [{ studentId, busStopId }];
+    }
+    const res = await window.apiCreateSchedule(req);
+    alert('스케줄 생성 완료: ' + (res?.id || 'OK'));
+  } catch (e) { alert('실패: ' + e); }
+}
+
+window.uiCreateScheduleWithStudents = async function() {
+  try {
+    const academyId = (window.ACADEMY_ID || document.getElementById('academyId')?.value.trim());
+    const routeId = document.getElementById('sws_routeId').value.trim();
+    const name = document.getElementById('sws_name').value.trim();
+    const repeatDays = parseInt(document.getElementById('sws_repeat').value.trim() || '0', 10);
+    const startTime = document.getElementById('sws_start').value.trim();
+    const boardingStatus = document.getElementById('sws_boarding').value;
+    const studentId = document.getElementById('sws_student').value.trim();
+    const busStopId = document.getElementById('sws_busstop').value.trim();
+    if (!academyId || !routeId || !name || !startTime || !studentId || !busStopId) {
+      alert('필수값 누락');
+      return;
+    }
+    const assignments = [{ studentId, busStopId }];
+    const req = { academyId, routeId, name, repeatDays, startTime, boardingStatus, assignments };
+    const res = await window.apiCreateScheduleWithStudents(req);
+    alert('스케줄+학생 생성 완료: ' + (res?.id || 'OK'));
+  } catch (e) { alert('실패: ' + e); }
+}
+
+window.uiBuildRuns = async function() {
+  try {
+    const scheduleId = document.getElementById('run_scheduleId').value.trim();
+    const from = document.getElementById('run_from').value.trim();
+    const to = document.getElementById('run_to').value.trim();
+    if (!scheduleId || !from || !to) { alert('scheduleId/from/to 입력'); return; }
+    const res = await window.apiBuildRuns(scheduleId, from, to);
+    alert('운행 생성 완료: ' + (Array.isArray(res) ? res.length + '건' : 'OK'));
+  } catch (e) { alert('실패: ' + e); }
+}
+
+window.uiCancelRunStudent = async function() {
+  try {
+    const runId = document.getElementById('rs_runId').value.trim();
+    const studentId = document.getElementById('rs_studentId').value.trim();
+    if (!runId || !studentId) { alert('runId/studentId 입력'); return; }
+    const res = await window.apiCancelRunStudent(runId, studentId);
+    alert(`취소 완료. routeRebuilt=${res?.routeRebuilt}`);
+  } catch (e) { alert('실패: ' + e); }
+}
+
+window.uiRequestBoardingChange = async function() {
+  try {
+    const runId = document.getElementById('bcr_runId').value.trim();
+    const studentId = document.getElementById('bcr_studentId').value.trim();
+    const toBusStopId = document.getElementById('bcr_toStopId').value.trim();
+    const reason = document.getElementById('bcr_reason').value.trim();
+    if (!runId || !studentId || !toBusStopId) { alert('runId/studentId/toBusStopId 입력'); return; }
+    const res = await window.apiRequestBoardingChange(runId, studentId, toBusStopId, reason);
+    alert('요청 생성 완료: ' + (res?.id || 'OK'));
+  } catch (e) { alert('실패: ' + e); }
+}
+
+window.uiApproveBoardingChange = async function() {
+  try {
+    const id = document.getElementById('bcr_id').value.trim();
+    const processedBy = document.getElementById('bcr_processedBy').value.trim();
+    if (!id || !processedBy) { alert('requestId/processedBy 입력'); return; }
+    const res = await window.apiApproveBoardingChange(id, processedBy);
+    alert('승인 완료: ' + (res?.id || 'OK'));
+  } catch (e) { alert('실패: ' + e); }
+}
+
+window.uiRejectBoardingChange = async function() {
+  try {
+    const id = document.getElementById('bcr_id').value.trim();
+    const processedBy = document.getElementById('bcr_processedBy').value.trim();
+    const rejectReason = document.getElementById('bcr_rejectReason').value.trim();
+    if (!id || !processedBy) { alert('requestId/processedBy 입력'); return; }
+    const res = await window.apiRejectBoardingChange(id, processedBy, rejectReason);
+    alert('반려 완료: ' + (res?.id || 'OK'));
+  } catch (e) { alert('실패: ' + e); }
+}
+
 function toggleType(type, show) {
   const arr = markersByType[type] || [];
   arr.forEach(m => m.setMap(show ? map : null));

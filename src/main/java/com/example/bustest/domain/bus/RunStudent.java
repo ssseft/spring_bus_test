@@ -14,12 +14,12 @@ import java.util.UUID;
 
 @Entity
 @Table(
-    name = "schedule_daily_plan_students",
-    uniqueConstraints = @UniqueConstraint(name = "uq_plan_student", columnNames = {"schedule_daily_plan_id", "student_id"})
+        name = "run_students",
+        uniqueConstraints = @UniqueConstraint(name = "uq_run_student", columnNames = {"run_id", "student_id"})
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ScheduleDailyPlanStudent {
+public class RunStudent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -27,14 +27,14 @@ public class ScheduleDailyPlanStudent {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_daily_plan_id", nullable = false)
-    private ScheduleDailyPlan scheduleDailyPlan;
+    @JoinColumn(name = "run_id", nullable = false)
+    private Run run;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    // 조회 성능을 위해 여기에도 중복 저장(굳이 필요 없으면 지워도 될거같긴 함)
+    // 조회 성능을 위해 여기에도 중복 저장(굳이 필요 없으면 지워도 됨)
     @Column(name = "date", nullable = false)
     private LocalDate date;
 
@@ -46,8 +46,8 @@ public class ScheduleDailyPlanStudent {
     private LocalTime plannedTime;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "schedule_status", nullable = false)
-    private ScheduleStatus scheduleStatus; //cancel,reserve로 구분 기본값 reserve
+    @Column(name = "status", nullable = false)
+    private RunStudentStatus status; //default : reserved
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -56,34 +56,36 @@ public class ScheduleDailyPlanStudent {
     private Instant updatedAt = Instant.now();
 
     @Builder
-    public ScheduleDailyPlanStudent(ScheduleDailyPlan scheduleDailyPlan,
-                           Student student,
-                           LocalDate date,
-                           BusStop busStop,
-                           LocalTime plannedTime,
-                           ScheduleStatus scheduleStatus) {
-        this.scheduleDailyPlan = scheduleDailyPlan;
+    public RunStudent(Run run,
+                      Student student,
+                      LocalDate date,
+                      BusStop busStop,
+                      LocalTime plannedTime,
+                      RunStudentStatus status) {
+        this.run = run;
         this.student = student;
         this.date = date;
         this.busStop = busStop;
         this.plannedTime = plannedTime;
-        this.scheduleStatus = scheduleStatus;
+        this.status = status;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 
     public void update(BusStop busStop,
                        LocalTime plannedTime,
-                       ScheduleStatus scheduleStatus) {
+                       RunStudentStatus status) {
         if (busStop != null) this.busStop = busStop;
         if (plannedTime != null) this.plannedTime = plannedTime;
-        if (scheduleStatus != null) this.scheduleStatus = scheduleStatus;
+        if (status != null) this.status = status;
         this.updatedAt = Instant.now();
     }
 
-    public enum ScheduleStatus {
-        RESERVED,
-        CANCELED
+    public enum RunStudentStatus {
+        reserved,
+        boarded,
+        completed,
+        no_show,
+        canceled
     }
 }
-

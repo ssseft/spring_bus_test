@@ -1,6 +1,6 @@
-package com.example.bustest.dto.schedule;
+package com.example.bustest.dto.run;
 
-import com.example.bustest.domain.bus.ScheduleDailyPlan;
+import com.example.bustest.domain.bus.Run;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,8 +12,9 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ScheduleDailyPlanBulkRequest {
+public class RunBulkRequest {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private List<LocalDate> dates;
-    private ScheduleDailyPlan.Status status; // optional: set same status for all
+    private Run.RunStatus status; // optional: set same status for all
 }
+

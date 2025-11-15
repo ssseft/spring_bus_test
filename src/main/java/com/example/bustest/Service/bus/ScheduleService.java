@@ -6,7 +6,7 @@ import com.example.bustest.Repository.bus.ScheduleStudentRepository;
 import com.example.bustest.Repository.bus.RouteStopRepository;
 import com.example.bustest.Repository.bus.BusStopRepository;
 import com.example.bustest.Repository.user.StudentRepository;
-import com.example.bustest.Service.bus.ScheduleDailyPlanService;
+import com.example.bustest.Service.bus.RunService;
 import com.example.bustest.domain.bus.Route;
 import com.example.bustest.domain.bus.Schedule;
 import com.example.bustest.domain.bus.ScheduleStudent;
@@ -30,7 +30,7 @@ public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final RouteRepository routeRepository;
-    private final ScheduleDailyPlanService dailyPlanService;
+    private final RunService dailyPlanService;
     private final ScheduleStudentRepository scheduleStudentRepository;
     private final RouteStopRepository routeStopRepository;
     private final StudentRepository studentRepository;
@@ -47,13 +47,22 @@ public class ScheduleService {
                            Boolean isActive) {
         Route route = routeRepository.findById(routeId)
                 .orElseThrow(() -> new BaseException(ErrorCode.ROUTE_NOT_FOUND));
+        // endTime이 전달되지 않으면 노선 total_time을 기준으로 산출
+        LocalTime total = route.getTotalTime();
+        LocalTime computedEnd = endTime != null
+                ? endTime
+                : (startTime
+                    .plusHours(total.getHour())
+                    .plusMinutes(total.getMinute())
+                    .plusSeconds(total.getSecond()));
+
         Schedule s = Schedule.builder()
                 .academyId(academyId)
                 .route(route)
                 .name(name)
                 .repeatDays(repeatDays)
                 .startTime(startTime)
-                .endTime(endTime)
+                .endTime(computedEnd)
                 .boardingStatus(boardingStatus)
                 .isActive(isActive != null ? isActive : true) //기본값 true 설정
                 .build();
@@ -152,7 +161,7 @@ public class ScheduleService {
 
     //일정 기간동안 스케쥴 생성 이건 고민중
     //생각하고 있는 시나리오는 8월 생성 -> 리스트 만들어짐 -> 삭제 선택(휴무일 등) ->
-    // 생성 버튼 누르면 ScheduleDailyPlan 테이블 생성
+    // 생성 버튼 누르면 Run 테이블 생성
     @Transactional
     public void rebuildPlans(UUID scheduleId, LocalDate from, LocalDate to) {
         dailyPlanService.upsertRange(scheduleId, from, to);

@@ -39,6 +39,67 @@
     <select id="routeList" style="min-width:240px;"></select>
     <button onclick="showSelectedRoute()">선택 노선 표시</button>
   </div>
+
+  <hr/>
+  <div>
+    <h4>스케줄/운행/탑승 변경 테스트</h4>
+    <!-- Schedule -->
+    <div style="margin:6px 0;">
+      <strong>Schedule 생성</strong>
+      <input id="sch_routeId" placeholder="routeId" size="36" />
+      <input id="sch_name" placeholder="name" size="18" />
+      <input id="sch_repeat" placeholder="repeatDays(mask) ex: 42" size="10" />
+      <input id="sch_start" placeholder="startTime HH:MM:SS" size="16" />
+      <input id="sch_end" placeholder="endTime HH:MM:SS(선택)" size="18" />
+      <select id="sch_boarding">
+        <option value="PICKUP">PICKUP</option>
+        <option value="DROPOFF">DROPOFF</option>
+      </select>
+      <label><input type="checkbox" id="sch_active" checked /> isActive</label>
+      <!-- optional: 한 명 학생을 함께 배정하려면 아래 2개 입력 -->
+      <input id="sch_student" placeholder="(선택) studentId" size="28" />
+      <input id="sch_busstop" placeholder="(선택) busStopId" size="28" />
+      <button onclick="uiCreateSchedule()">스케줄 생성</button>
+    </div>
+
+    <!-- Schedule with students (간단: 한 명만) -->
+    <!-- 아래 섹션은 필요 시 유지. 위 스케줄 생성에서 단일 학생 배정을 함께 처리 가능하므로 생략 가능 -->
+
+    <!-- Build Runs -->
+    <div style="margin:6px 0;">
+      <strong>운행 생성(Build)</strong>
+      <input id="run_scheduleId" placeholder="scheduleId" size="36" />
+      <input id="run_from" placeholder="from YYYY-MM-DD" size="14" />
+      <input id="run_to" placeholder="to YYYY-MM-DD" size="14" />
+      <button onclick="uiBuildRuns()">생성</button>
+    </div>
+
+    <!-- RunStudent cancel -->
+    <div style="margin:6px 0;">
+      <strong>안타요(취소)</strong>
+      <input id="rs_runId" placeholder="runId" size="36" />
+      <input id="rs_studentId" placeholder="studentId" size="36" />
+      <button onclick="uiCancelRunStudent()">취소 처리</button>
+    </div>
+
+    <!-- BoardingChangeRequest -->
+    <div style="margin:6px 0;">
+      <strong>탑승 위치 변경 요청</strong>
+      <input id="bcr_runId" placeholder="runId" size="30" />
+      <input id="bcr_studentId" placeholder="studentId" size="30" />
+      <input id="bcr_toStopId" placeholder="toBusStopId" size="30" />
+      <input id="bcr_reason" placeholder="reason(선택)" size="22" />
+      <button onclick="uiRequestBoardingChange()">요청</button>
+    </div>
+    <div style="margin:6px 0;">
+      <strong>요청 승인/반려</strong>
+      <input id="bcr_id" placeholder="requestId" size="30" />
+      <input id="bcr_processedBy" placeholder="processedBy(approver UUID)" size="34" />
+      <input id="bcr_rejectReason" placeholder="rejectReason" size="22" />
+      <button onclick="uiApproveBoardingChange()">승인</button>
+      <button onclick="uiRejectBoardingChange()">반려</button>
+    </div>
+  </div>
 </div>
 <div id="map"></div>
 

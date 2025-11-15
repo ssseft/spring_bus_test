@@ -1,6 +1,6 @@
-package com.example.bustest.dto.schedule;
+package com.example.bustest.dto.run;
 
-import com.example.bustest.domain.bus.ScheduleDailyPlan;
+import com.example.bustest.domain.bus.Run;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,7 +13,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ScheduleDailyPlanResponse {
+public class RunResponse {
     private UUID id;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate date;
@@ -22,15 +22,16 @@ public class ScheduleDailyPlanResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    public static ScheduleDailyPlanResponse from(ScheduleDailyPlan p) {
-        UUID routeId = p.getRoute() != null ? p.getRoute().getId() : null;
-        return new ScheduleDailyPlanResponse(
-                p.getId(),
-                p.getDate(),
-                p.getStatus().name(),
+    public static RunResponse from(Run r) {
+        UUID routeId = r.getRoute() != null ? r.getRoute().getId() : null;
+        return new RunResponse(
+                r.getId(),
+                r.getDate(),
+                r.getStatus() != null ? r.getStatus().toString() : null,
                 routeId,
-                p.getCreatedAt(),
-                p.getUpdatedAt()
+                r.getCreatedAt(),
+                r.getUpdatedAt()
         );
     }
 }
+
