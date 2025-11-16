@@ -10,7 +10,8 @@ import java.util.UUID;
 
 // repository jpa 형식은 잘 몰라서 gpt한테 써달라고 했음
 public interface RouteStopRepository extends JpaRepository<RouteStop, UUID> {
-    boolean existsByRouteAndBusStop(UUID routeId, UUID busStopId);
+    // Match by foreign key ids to avoid type mismatch with entity references
+    boolean existsByRoute_IdAndBusStop_Id(UUID routeId, UUID busStopId);
     List<RouteStop> findByRoute_IdOrderByStopOrder(UUID routeId);
 
     //지연로딩으로 설정된걸 한번에 가져오기 위해 페치 조인 사용(이게 제일 편한듯)

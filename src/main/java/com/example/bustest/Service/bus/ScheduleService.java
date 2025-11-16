@@ -125,7 +125,7 @@ public class ScheduleService {
                     .orElseThrow(() -> new BaseException(ErrorCode.BUS_STOP_NOT_FOUND));
 
             // 정류장이 해당 노선에 속하는지 체크하는 코드
-            if (!routeStopRepository.existsByRouteAndBusStop(route.getId(), stop.getId())) {
+            if (!routeStopRepository.existsByRoute_IdAndBusStop_Id(route.getId(), stop.getId())) {
                 throw new BaseException(ErrorCode.INVALID_INPUT_VALUE);
             }
 
@@ -227,7 +227,7 @@ public class ScheduleService {
         //route랑 busstop 매칭 확인코드
         UUID routeId = s.getRoute().getId();
         for (ScheduleStudentRequest it : items) {
-            if (!routeStopRepository.existsByRouteAndBusStop(routeId, it.getBusStopId()))
+            if (!routeStopRepository.existsByRoute_IdAndBusStop_Id(routeId, it.getBusStopId()))
                 throw new BaseException(ErrorCode.INVALID_INPUT_VALUE, "busStop not in route");
             boolean exists = scheduleStudentRepository.findByScheduleIdAndStudentId(scheduleId, it.getStudentId()).isPresent();
             if (exists) throw new BaseException(ErrorCode.INVALID_INPUT_VALUE, "student already assigned");
@@ -256,7 +256,7 @@ public class ScheduleService {
                 .orElseThrow(() -> new BaseException(ErrorCode.INVALID_INPUT_VALUE, "assignment not found"));
 
         UUID routeId = s.getRoute().getId();
-        if (!routeStopRepository.existsByRouteAndBusStop(routeId, newBusStopId))
+        if (!routeStopRepository.existsByRoute_IdAndBusStop_Id(routeId, newBusStopId))
             throw new BaseException(ErrorCode.INVALID_INPUT_VALUE, "busStop not in route");
         BusStop stop = busStopRepository.findById(newBusStopId)
                 .orElseThrow(() -> new BaseException(ErrorCode.BUS_STOP_NOT_FOUND));
