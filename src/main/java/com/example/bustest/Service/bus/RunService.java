@@ -3,7 +3,7 @@ package com.example.bustest.Service.bus;
 import com.example.bustest.Repository.bus.RunRepository;
 import com.example.bustest.Repository.bus.RunStudentRepository;
 import com.example.bustest.Repository.bus.ScheduleRepository;
-import com.example.bustest.Repository.map.RouteRepository;
+import com.example.bustest.Repository.bus.RouteRepository;
 import com.example.bustest.domain.bus.Route;
 import com.example.bustest.domain.bus.Run;
 import com.example.bustest.domain.bus.Schedule;

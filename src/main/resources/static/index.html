@@ -1,106 +1,134 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kakao Map Integration</title>
-  <style>
-    html, body { height: 100%; margin: 0; }
-    #map { width: 100%; height: calc(100% - 140px); }
-    .panel { padding: 10px; }
-    input, select, button { margin: 4px; padding: 6px; }
-  </style>
-  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-  <script type="text/javascript"
-          src="//dapi.kakao.com/v2/maps/sdk.js?appkey=651a42d67f9cd74a1fcbb557bb60907f&libraries=services&autoload=false"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kakao Map Integration</title>
+    <style>
+        html, body { height: 100%; margin: 0; }
+        #map { width: 100%; height: calc(100% - 140px); }
+        .panel { padding: 10px; }
+        input, select, button { margin: 4px; padding: 6px; }
+    </style>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <script type="text/javascript"
+            src="//dapi.kakao.com/v2/maps/sdk.js?appkey=651a42d67f9cd74a1fcbb557bb60907f&libraries=services&autoload=false"></script>
 </head>
 <body>
 <div class="panel">
-  <h3>Bunncet + KaKaoMap</h3>
-  <div>
-    <input id="academyId" placeholder="학원 UUID (필수)" size="38" />
-    <button onclick="setAcademyAndLoad()">버스정류장 불러오기</button>
-    <br/>
-    <input id="routeName" placeholder="노선명 (선택)" size="24" />
-    <input id="title" placeholder="명칭 (예: 홍길동 집)" size="24" />
-    <input id="address" placeholder="주소 (지오코딩)" size="40" />
-    <select id="type">
-      <option value="STUDENT">STUDENT</option>
-      <option value="STOP">STOP</option>
-    </select>
-    <button onclick="submitLocation()">주소 등록</button>
-    <button onclick="loadMarkers()">마커 새로고침</button>
-    <!-- 노선(경로) 기능 버튼 -->
-    <button onclick="toggleRouteMode()" id="btnRouteMode">노선등록 모드: OFF</button>
-    <button onclick="drawRoute()">경로 그리기</button>
-    <button onclick="clearRoute()">경로 지우기</button>
-    <!-- 저장된 노선 확인 -->
-    <button onclick="loadRoutes()">노선 목록 불러오기</button>
-    <select id="routeList" style="min-width:240px;"></select>
-    <button onclick="showSelectedRoute()">선택 노선 표시</button>
+    <h3>Bunncet + KaKaoMap</h3>
+    <div>
+        <input id="academyId" placeholder="학원 UUID (필수)" size="38" />
+        <button onclick="setAcademyAndLoad()">버스정류장 불러오기</button>
+        <br/>
+        <input id="routeName" placeholder="노선명 (선택)" size="24" />
+        <input id="title" placeholder="명칭 (예: 홍길동 집)" size="24" />
+        <input id="address" placeholder="주소 (지오코딩)" size="40" />
+        <select id="type">
+            <option value="STUDENT">STUDENT</option>
+            <option value="STOP">STOP</option>
+        </select>
+        <button onclick="submitLocation()">주소 등록</button>
+        <button onclick="loadMarkers()">마커 새로고침</button>
+        <!-- 노선(경로) 기능 버튼 -->
+        <button onclick="toggleRouteMode()" id="btnRouteMode">노선등록 모드: OFF</button>
+        <button onclick="drawRoute()">경로 그리기</button>
+        <button onclick="clearRoute()">경로 지우기</button>
+        <!-- 저장된 노선 확인 -->
+        <button onclick="loadRoutes()">노선 목록 불러오기</button>
+        <select id="routeList" style="min-width:240px;"></select>
+        <button onclick="showSelectedRoute()">선택 노선 표시</button>
+    </div>
+</div>
+    <!-- Schedule 생성 UI -->
+    <hr />
+    <div>
+        <h4>스케줄 생성</h4>
+        <div style="display:flex; flex-wrap: wrap; align-items:center; gap:6px;">
+            <input id="scheduleName" placeholder="스케줄 이름" size="20" />
+            <label>시작시간 <input id="scheduleStartTime" type="time" value="08:30" /></label>
+            <label>승/하차
+                <select id="boardingStatus">
+                    <option value="PICKUP">PICKUP(승차)</option>
+                    <option value="DROPOFF">DROPOFF(하차)</option>
+                </select>
+            </label>
+            <span>반복 요일:</span>
+            <label><input type="checkbox" name="scheduleDays[]" value="MON" checked />월</label>
+            <label><input type="checkbox" name="scheduleDays[]" value="TUE" checked />화</label>
+            <label><input type="checkbox" name="scheduleDays[]" value="WED" checked />수</label>
+            <label><input type="checkbox" name="scheduleDays[]" value="THU" checked />목</label>
+            <label><input type="checkbox" name="scheduleDays[]" value="FRI" checked />금</label>
+            <label><input type="checkbox" name="scheduleDays[]" value="SAT" />토</label>
+            <label><input type="checkbox" name="scheduleDays[]" value="SUN" />일</label>
+        </div>
+
+        <div style="margin-top:8px;">
+            <strong>학생 배정</strong>
+            <button type="button" id="btnAddAssignment">행 추가</button>
+            <div id="assignmentContainer" style="margin-top:6px;"></div>
+        </div>
+
+        <div style="margin-top:10px;">
+            <button type="button" id="btnCreateSchedule">스케줄 생성</button>
+            <input id="scheduleIdForView" placeholder="스케줄 ID" size="38" />
+            <button type="button" id="btnViewSchedule">스케줄 조회</button>
+        </div>
+    </div>
+
+<div id="scheduleDetail" style="padding:10px; font-family: sans-serif;">
+    <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+        <h4 style="margin:0;">스케줄 상세</h4>
+        <button id="btnToggleScheduleDetail" type="button" style="padding:4px 8px;">접기</button>
+        <button id="btnDeleteSchedule" type="button" style="padding:4px 8px; background:#dc3545; color:#fff; border:none; border-radius:4px; cursor:pointer;">삭제</button>
+    </div>
+    <div id="scheduleDetailBody">
+        <div id="scheduleSummary" style="margin-bottom:8px; color:#333;"></div>
+        <div>
+            <table style="border-collapse:collapse; width:100%; max-width:720px;">
+                <thead>
+                    <tr>
+                        <th style="border-bottom:1px solid #ddd; text-align:left; padding:6px;">#</th>
+                        <th style="border-bottom:1px solid #ddd; text-align:left; padding:6px;">학생 ID</th>
+                        <th style="border-bottom:1px solid #ddd; text-align:left; padding:6px;">정류장 ID</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleAssignmentsBody"></tbody>
+            </table>
+        </div>
+        <div id="scheduleEmpty" style="display:none; color:#777;">배정된 학생이 없습니다.</div>
+    </div>
   </div>
 
-  <hr/>
-  <div>
-    <h4>스케줄/운행/탑승 변경 테스트</h4>
-    <!-- Schedule -->
-    <div style="margin:6px 0;">
-      <strong>Schedule 생성</strong>
-      <input id="sch_routeId" placeholder="routeId" size="36" />
-      <input id="sch_name" placeholder="name" size="18" />
-      <input id="sch_repeat" placeholder="repeatDays(mask) ex: 42" size="10" />
-      <input id="sch_start" placeholder="startTime HH:MM:SS" size="16" />
-      <input id="sch_end" placeholder="endTime HH:MM:SS(선택)" size="18" />
-      <select id="sch_boarding">
-        <option value="PICKUP">PICKUP</option>
-        <option value="DROPOFF">DROPOFF</option>
-      </select>
-      <label><input type="checkbox" id="sch_active" checked /> isActive</label>
-      <!-- optional: 한 명 학생을 함께 배정하려면 아래 2개 입력 -->
-      <input id="sch_student" placeholder="(선택) studentId" size="28" />
-      <input id="sch_busstop" placeholder="(선택) busStopId" size="28" />
-      <button onclick="uiCreateSchedule()">스케줄 생성</button>
+<div id="scheduleEdit" style="padding:10px; font-family:sans-serif;">
+  <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+    <h4 style="margin:0;">스케줄 수정</h4>
+    <button id="btnToggleScheduleEdit" type="button" style="padding:4px 8px;">접기</button>
+  </div>
+  <div id="scheduleEditBody">
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <label>노선 변경
+        <select id="editRouteSelect" style="min-width:260px;"></select>
+      </label>
+      <button id="btnChangeRoute" type="button" style="padding:4px 8px;">노선 변경(배정 초기화)</button>
+      <button id="btnAssignAdd" type="button" style="padding:4px 8px;">학생 추가</button>
     </div>
-
-    <!-- Schedule with students (간단: 한 명만) -->
-    <!-- 아래 섹션은 필요 시 유지. 위 스케줄 생성에서 단일 학생 배정을 함께 처리 가능하므로 생략 가능 -->
-
-    <!-- Build Runs -->
-    <div style="margin:6px 0;">
-      <strong>운행 생성(Build)</strong>
-      <input id="run_scheduleId" placeholder="scheduleId" size="36" />
-      <input id="run_from" placeholder="from YYYY-MM-DD" size="14" />
-      <input id="run_to" placeholder="to YYYY-MM-DD" size="14" />
-      <button onclick="uiBuildRuns()">생성</button>
-    </div>
-
-    <!-- RunStudent cancel -->
-    <div style="margin:6px 0;">
-      <strong>안타요(취소)</strong>
-      <input id="rs_runId" placeholder="runId" size="36" />
-      <input id="rs_studentId" placeholder="studentId" size="36" />
-      <button onclick="uiCancelRunStudent()">취소 처리</button>
-    </div>
-
-    <!-- BoardingChangeRequest -->
-    <div style="margin:6px 0;">
-      <strong>탑승 위치 변경 요청</strong>
-      <input id="bcr_runId" placeholder="runId" size="30" />
-      <input id="bcr_studentId" placeholder="studentId" size="30" />
-      <input id="bcr_toStopId" placeholder="toBusStopId" size="30" />
-      <input id="bcr_reason" placeholder="reason(선택)" size="22" />
-      <button onclick="uiRequestBoardingChange()">요청</button>
-    </div>
-    <div style="margin:6px 0;">
-      <strong>요청 승인/반려</strong>
-      <input id="bcr_id" placeholder="requestId" size="30" />
-      <input id="bcr_processedBy" placeholder="processedBy(approver UUID)" size="34" />
-      <input id="bcr_rejectReason" placeholder="rejectReason" size="22" />
-      <button onclick="uiApproveBoardingChange()">승인</button>
-      <button onclick="uiRejectBoardingChange()">반려</button>
+    <div style="margin-top:10px;">
+      <table style="border-collapse:collapse; width:100%; max-width:920px;">
+        <thead>
+          <tr>
+            <th style="border-bottom:1px solid #ddd; text-align:left; padding:6px;">학생 이름</th>
+            <th style="border-bottom:1px solid #ddd; text-align:left; padding:6px;">상태</th>
+            <th style="border-bottom:1px solid #ddd; text-align:left; padding:6px;">정류장</th>
+            <th style="border-bottom:1px solid #ddd; text-align:left; padding:6px;">액션</th>
+          </tr>
+        </thead>
+        <tbody id="editStudentsBody"></tbody>
+      </table>
     </div>
   </div>
 </div>
+
 <div id="map"></div>
 
 <script src="/script.js"></script>

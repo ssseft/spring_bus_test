@@ -1,4 +1,4 @@
-package com.example.bustest.Repository.map;
+package com.example.bustest.Repository.bus;
 
 import com.example.bustest.domain.bus.Route;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -6,5 +6,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface RouteRepository extends JpaRepository<Route, UUID> {
-
 }

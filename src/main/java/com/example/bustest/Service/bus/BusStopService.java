@@ -39,6 +39,7 @@ public class BusStopService {
         return BusStopSummaryResponse.from(bs);
     }
 
+    //이건 나중에 사용될거같아서 일단 만들어 놓음.
     public List<BusStopSummaryResponse> listByAcademy(UUID academyId) {
         return busStopRepository.findByAcademyId(academyId)
                 .stream().map(BusStopSummaryResponse::from).toList();

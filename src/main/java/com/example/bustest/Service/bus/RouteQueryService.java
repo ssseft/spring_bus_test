@@ -1,4 +1,4 @@
-package com.example.bustest.Service.map;
+package com.example.bustest.Service.bus;
 
 import com.example.bustest.dto.map.CoordinateDTO;
 import com.example.bustest.dto.map.RouteDetailResponse;

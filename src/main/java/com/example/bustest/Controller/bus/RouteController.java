@@ -1,9 +1,9 @@
-package com.example.bustest.Controller.map;
+package com.example.bustest.Controller.bus;
 
 import com.example.bustest.Repository.bus.BusStopRepository;
 import com.example.bustest.Service.map.NaviApiService;
-import com.example.bustest.Service.map.RoutePersistService;
-import com.example.bustest.Service.map.RouteQueryService;
+import com.example.bustest.Service.bus.RoutePersistService;
+import com.example.bustest.Service.bus.RouteQueryService;
 import com.example.bustest.domain.bus.BusStop;
 import com.example.bustest.dto.map.*;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +22,11 @@ public class RouteController {
     private final NaviApiService naviApiService;
     private final RoutePersistService routePersistService;
     private final RouteQueryService routeQueryService;
+    private final com.example.bustest.Repository.bus.RouteStopRepository routeStopRepository;
 
     // Preview (BusStop 기반 / UUID)
     @PostMapping({"/preview", "/directions-busstops"})
-    public ResponseEntity<RoutePathResponse> previewByBusStops(@RequestBody RouteCreateRequest req) {
+    public ResponseEntity<RoutePreviewResponse> previewByBusStops(@RequestBody RouteCreateRequest req) {
         List<UUID> ids = Optional.ofNullable(req.getOrderedBusStopIds()).orElse(Collections.emptyList());
         if (ids.size() < 2) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -46,7 +47,7 @@ public class RouteController {
                 .toList();
 
         return naviApiService.directionsByOrderedCoords(orderedCoords)
-                .map(ResponseEntity::ok)
+                .map(r -> ResponseEntity.ok(new RoutePreviewResponse(r.getPath(), r.getDistanceMeters(), r.getDurationSeconds())))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_GATEWAY).build());
     }
 
@@ -65,5 +66,18 @@ public class RouteController {
     @GetMapping("/{routeId}")
     public RouteDetailResponse detail(@PathVariable UUID routeId) {
         return routeQueryService.getDetail(routeId);
+    }
+
+    // 노선에 속한 정류장 목록(순서 포함)
+    @GetMapping("/{routeId}/stops")
+    public java.util.List<com.example.bustest.dto.bus.RouteStopSummary> listStops(@PathVariable UUID routeId) {
+        return routeStopRepository.findWithBusStopByRoute_IdOrderByStopOrder(routeId)
+                .stream()
+                .map(rs -> new com.example.bustest.dto.bus.RouteStopSummary(
+                        rs.getBusStop().getId(),
+                        rs.getBusStop().getName(),
+                        rs.getStopOrder()
+                ))
+                .toList();
     }
 }

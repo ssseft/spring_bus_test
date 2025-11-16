@@ -11,7 +11,8 @@ import com.example.bustest.dto.schedule.ScheduleCreateRequest;
 import com.example.bustest.dto.schedule.ScheduleResponse;
 import com.example.bustest.dto.schedule.ScheduleStudentRequest;
 import com.example.bustest.dto.schedule.ScheduleUpdateRequest;
-import com.example.bustest.dto.schedule.ScheduleWithStudentsRequest;
+import com.example.bustest.dto.schedule.ScheduleRouteChangeRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @RequestMapping("/api/schedules")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+//ScheduleStudent관련 service도 여기서 해결 (구분하기가 애매한 부분이 있어서 이곳에 전부 넣음)
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
@@ -31,37 +33,9 @@ public class ScheduleController {
 
     @PostMapping
     public ScheduleResponse create(@RequestBody ScheduleCreateRequest req) {
-        Schedule s;
-        if (req.getAssignments() != null && !req.getAssignments().isEmpty()) {
-            // 학생 배정까지 함께 생성
-            s = scheduleService.createWithStudents(
-                    req.getAcademyId(),
-                    req.getRouteId(),
-                    req.getName(),
-                    req.getRepeatDays(),
-                    req.getStartTime(),
-                    req.getBoardingStatus(),
-                    req.getAssignments()
-            );
-        } else {
-            // 스케줄만 생성
-            s = scheduleService.create(
-                    req.getAcademyId(),
-                    req.getRouteId(),
-                    req.getName(),
-                    req.getRepeatDays(),
-                    req.getStartTime(),
-                    req.getEndTime(),
-                    req.getBoardingStatus(),
-                    req.getIsActive()
-            );
+        if (req.getAssignments() == null || req.getAssignments().isEmpty()) {
+            throw new BaseException(ErrorCode.INVALID_INPUT_VALUE, "assignments is required and must not be empty");
         }
-        List<ScheduleStudent> assigns = scheduleStudentRepository.findByScheduleId(s.getId());
-        return ScheduleResponse.from(s, assigns);
-    }
-
-    @PostMapping(":with-students")
-    public ScheduleResponse createWithStudents(@RequestBody ScheduleWithStudentsRequest req) {
         Schedule s = scheduleService.createWithStudents(
                 req.getAcademyId(),
                 req.getRouteId(),
@@ -74,6 +48,7 @@ public class ScheduleController {
         List<ScheduleStudent> assigns = scheduleStudentRepository.findByScheduleId(s.getId());
         return ScheduleResponse.from(s, assigns);
     }
+
 
     @PatchMapping("/{scheduleId}")
     public ScheduleResponse update(@PathVariable UUID scheduleId, @RequestBody ScheduleUpdateRequest req) {
@@ -119,5 +94,44 @@ public class ScheduleController {
         return items.stream()
                 .map(s -> ScheduleResponse.from(s, scheduleStudentRepository.findByScheduleId(s.getId())))
                 .toList();
+    }
+
+    @DeleteMapping("/{scheduleId}")
+    public ResponseEntity<?> delete(@PathVariable UUID scheduleId) {
+        scheduleService.delete(scheduleId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{scheduleId}/assignments")
+    public ScheduleResponse addAssignments(@PathVariable UUID scheduleId,
+                                           @RequestBody List<@Valid ScheduleStudentRequest> items) {
+        Schedule s = scheduleService.addAssignments(scheduleId, items);
+        List<ScheduleStudent> assigns = scheduleStudentRepository.findByScheduleId(s.getId());
+        return ScheduleResponse.from(s, assigns);
+    }
+
+    @PatchMapping("/{scheduleId}/assignments/{studentId}")
+    public ScheduleResponse updateAssignment(@PathVariable UUID scheduleId,
+                                             @PathVariable UUID studentId,
+                                             @RequestBody @Valid ScheduleStudentRequest body) {
+        Schedule s = scheduleService.updateAssignment(scheduleId, studentId, body.getBusStopId());
+        List<ScheduleStudent> assigns = scheduleStudentRepository.findByScheduleId(s.getId());
+        return ScheduleResponse.from(s, assigns);
+    }
+
+    @DeleteMapping("/{scheduleId}/assignments/{studentId}")
+    public ResponseEntity<?> deleteAssignment(@PathVariable UUID scheduleId,
+                                              @PathVariable UUID studentId) {
+        scheduleService.deleteAssignment(scheduleId, studentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{scheduleId}:change-route")
+    public ScheduleResponse changeRoute(@PathVariable UUID scheduleId,
+                                        @RequestBody ScheduleRouteChangeRequest req) {
+        UUID newRouteId = req != null ? req.getRouteId() : null;
+        Schedule s = scheduleService.changeRouteAndResetAssignments(scheduleId, newRouteId);
+        List<ScheduleStudent> assigns = scheduleStudentRepository.findByScheduleId(s.getId());
+        return ScheduleResponse.from(s, assigns);
     }
 }

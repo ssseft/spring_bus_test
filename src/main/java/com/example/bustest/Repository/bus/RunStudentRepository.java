@@ -14,7 +14,6 @@ public interface RunStudentRepository extends JpaRepository<RunStudent, UUID> {
     List<RunStudent> findByStudentIdAndDateBetween(UUID studentId, LocalDate from, LocalDate to);
     int countByRunId(UUID runId);
 
-    // Same-stop remaining passengers (exists/count)
     boolean existsByRunIdAndBusStopIdAndStatusInAndStudentIdNot(UUID runId, UUID busStopId, java.util.Collection<RunStudent.RunStudentStatus> statuses, UUID studentId);
     int countByRunIdAndBusStopIdAndStatusIn(UUID runId, UUID busStopId, java.util.Collection<RunStudent.RunStudentStatus> statuses);
 }

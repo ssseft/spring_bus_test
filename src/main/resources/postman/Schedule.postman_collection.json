@@ -1,0 +1,211 @@
+{
+  "info": {
+    "name": "BusTest - Schedule APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "c1b1b0aa-3f36-4a5c-9a3d-000000000001"
+  },
+  "item": [
+    {
+      "name": "스케줄 생성(학생 배정 포함)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/schedules",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "schedules"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"academyId\": \"{{academyId}}\",\n  \"routeId\": \"{{routeId}}\",\n  \"name\": \"등원 1호차\",\n  \"repeatDays\": 62,\n  \"startTime\": \"08:30\",\n  \"boardingStatus\": \"{{boardingStatus}}\",\n  \"assignments\": [\n    { \"studentId\": \"{{studentId1}}\", \"busStopId\": \"{{busStopId1}}\" },\n    { \"studentId\": \"{{studentId2}}\", \"busStopId\": \"{{busStopId2}}\" }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.expect(json).to.have.property('id');",
+              "pm.collectionVariables.set('scheduleId', json.id);",
+              "pm.test('Has assignments', function () { pm.expect(json.assignments || []).to.have.length.above(0); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "스케줄 단건 조회",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/schedules/{{scheduleId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "schedules", "{{scheduleId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('IDs match', function () { pm.expect(json.id).to.eql(pm.collectionVariables.get('scheduleId')); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "스케줄 목록(academyId)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/schedules?academyId={{academyId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "schedules"],
+          "query": [
+            { "key": "academyId", "value": "{{academyId}}" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const arr = pm.response.json();",
+              "pm.test('Returns array', function () { pm.expect(Array.isArray(arr)).to.be.true; });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "스케줄 수정",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/schedules/{{scheduleId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "schedules", "{{scheduleId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"등원 1호차(수정)\",\n  \"startTime\": \"08:40\",\n  \"endTime\": \"09:25\",\n  \"isActive\": true\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Name updated', function () { pm.expect(pm.response.json().name).to.include('수정'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "스케줄 활성화",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/schedules/{{scheduleId}}:activate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "schedules", "{{scheduleId}}:activate"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', function () { pm.response.to.have.status(204); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "스케줄 비활성화",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/schedules/{{scheduleId}}:deactivate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "schedules", "{{scheduleId}}:deactivate"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', function () { pm.response.to.have.status(204); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "[부정 케이스] assignments 없이 생성(400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/schedules",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "schedules"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"academyId\": \"{{academyId}}\",\n  \"routeId\": \"{{routeId}}\",\n  \"name\": \"등원 X호차\",\n  \"repeatDays\": 62,\n  \"startTime\": \"08:30\",\n  \"boardingStatus\": \"{{boardingStatus}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 400', function () { pm.response.to.have.status(400); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "academyId", "value": "00000000-0000-0000-0000-000000000001" },
+    { "key": "routeId", "value": "00000000-0000-0000-0000-000000000002" },
+    { "key": "studentId1", "value": "00000000-0000-0000-0000-000000000003" },
+    { "key": "busStopId1", "value": "00000000-0000-0000-0000-000000000004" },
+    { "key": "studentId2", "value": "00000000-0000-0000-0000-000000000005" },
+    { "key": "busStopId2", "value": "00000000-0000-0000-0000-000000000006" },
+    { "key": "scheduleId", "value": "" },
+    { "key": "boardingStatus", "value": "PICKUP" }
+  ]
+}

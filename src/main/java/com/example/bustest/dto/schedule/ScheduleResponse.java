@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,18 +38,25 @@ public class ScheduleResponse {
     }
 
     public static ScheduleResponse from(Schedule s, List<ScheduleStudent> list) {
-        List<Assignment> assigns = list == null ? java.util.List.of() : list.stream()
-                .map(ss -> new Assignment(ss.getStudent().getId(), ss.getBusStop().getId()))
-                .toList();
+        List<Assignment> assigns = new ArrayList<>();
+
+        // 가독성을 위해 이렇게 작성 ScheduleStudent -> Assignment로 바꾸는 과정
+        for (ScheduleStudent ss : list) {
+            UUID studentId = ss.getStudent().getId();
+            UUID busStopId = ss.getBusStop().getId();
+            assigns.add(new Assignment(studentId, busStopId));
+        }
+
+
         return new ScheduleResponse(
                 s.getId(),
                 s.getAcademyId(),
-                s.getRoute() != null ? s.getRoute().getId() : null,
+                s.getRoute() == null ?  null : s.getRoute().getId(),
                 s.getName(),
                 s.getRepeatDays(),
                 s.getStartTime(),
                 s.getEndTime(),
-                s.getBoardingStatus() != null ? s.getBoardingStatus().name() : null,
+                s.getBoardingStatus() == null ? null : s.getBoardingStatus().name() ,
                 s.getIsActive(),
                 s.getCreatedAt(),
                 s.getUpdatedAt(),

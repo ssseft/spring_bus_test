@@ -1,6 +1,7 @@
-package com.example.bustest.Service.map;
+package com.example.bustest.Service.bus;
 
 import com.example.bustest.Repository.bus.BusStopRepository;
+import com.example.bustest.Service.map.NaviApiService;
 import com.example.bustest.domain.bus.BusStop;
 import com.example.bustest.dto.map.CoordinateDTO;
 import com.example.bustest.dto.map.RouteCreateRequest;
