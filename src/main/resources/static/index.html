@@ -1,47 +1,348 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kakao Map Integration</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>운행 관리 대시보드(정류장/노선/지도 + 키워드 검색)</title>
   <style>
-    html, body { height: 100%; margin: 0; }
-    #map { width: 100%; height: calc(100% - 140px); }
-    .panel { padding: 10px; }
-    input, select, button { margin: 4px; padding: 6px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', Dotum, sans-serif; margin:0; }
+    .map_wrap { position:relative; width:100%; height:100vh; }
+    #map { width:100%; height:100%; position:relative; overflow:hidden; }
+
+    /* 왼쪽 고정 패널: 기존 기능(학원/토글/편집/노선) + 키워드 검색 */
+    #side { position:absolute; top:0; left:0; bottom:0; width:360px; margin:10px; padding:12px; overflow:auto; background:rgba(255,255,255,0.95); z-index:10000; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,.15) }
+    .section { margin-bottom:12px; }
+    .section h2 { font-size:14px; margin:0 0 6px; color:#333; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; }
+    label { min-width:72px; color:#333; }
+    input[type="text"] { padding:6px 8px; border:1px solid #bbb; border-radius:6px; flex:1; }
+    button { padding:6px 10px; border:1px solid #2b7cff; background:#2b7cff; color:#fff; border-radius:6px; cursor:pointer; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .hint { font-size:11px; color:#666; }
+    .panel { border:1px solid #e5e5e5; padding:8px; border-radius:8px; background:#fafafa; }
+
+    /* 키워드 검색 목록 스타일(카카오 샘플과 동일 스프라이트 사용) */
+    #placesList { padding:0; max-height:280px; overflow:auto; }
+    #placesList li { list-style:none; }
+    #placesList .item { position:relative; border-bottom:1px solid #ddd; overflow:hidden; cursor:pointer; min-height:65px; background:#fff; }
+    #placesList .item:hover { background:#f7fbff; }
+    #placesList .item.selected { background:#e8f0fe; border-left:3px solid #2b7cff; }
+    #placesList .item span { display:block; margin-top:4px; }
+    #placesList .item h5, #placesList .item .info { text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
+    #placesList .item .info { padding:10px 10px 10px 55px; }
+    #placesList .info .gray { color:#8a8a8a; }
+    #placesList .info .jibun { padding-left:26px; background:url(https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/places_jibun.png) no-repeat; }
+    #placesList .info .tel { color:#009900; }
+    #placesList .item .markerbg { float:left; position:absolute; width:36px; height:37px; margin:10px 0 0 10px; background:url(https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_number_blue.png) no-repeat; }
+    #placesList .item .marker_1 { background-position:0 -10px; }
+    #placesList .item .marker_2 { background-position:0 -56px; }
+    #placesList .item .marker_3 { background-position:0 -102px; }
+    #placesList .item .marker_4 { background-position:0 -148px; }
+    #placesList .item .marker_5 { background-position:0 -194px; }
+    #placesList .item .marker_6 { background-position:0 -240px; }
+    #placesList .item .marker_7 { background-position:0 -286px; }
+    #placesList .item .marker_8 { background-position:0 -332px; }
+    #placesList .item .marker_9 { background-position:0 -378px; }
+    #placesList .item .marker_10 { background-position:0 -423px; }
+    #placesList .item .marker_11 { background-position:0 -470px; }
+    #placesList .item .marker_12 { background-position:0 -516px; }
+    #placesList .item .marker_13 { background-position:0 -562px; }
+    #placesList .item .marker_14 { background-position:0 -608px; }
+    #placesList .item .marker_15 { background-position:0 -654px; }
+    #pagination { margin:8px 0; text-align:center; }
+    #pagination a { display:inline-block; margin-right:10px; }
+    #pagination .on { font-weight:bold; cursor:default; color:#777; }
   </style>
-  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-  <script type="text/javascript"
-          src="//dapi.kakao.com/v2/maps/sdk.js?appkey=651a42d67f9cd74a1fcbb557bb60907f&libraries=services&autoload=false"></script>
 </head>
 <body>
-<div class="panel">
-  <h3>Bunncet + KaKaoMap</h3>
-  <div>
-    <input id="academyId" placeholder="학원 UUID (필수)" size="38" />
-    <button onclick="setAcademyAndLoad()">버스정류장 불러오기</button>
-    <br/>
-    <input id="routeName" placeholder="노선명 (선택)" size="24" />
-    <input id="title" placeholder="명칭 (예: 홍길동 집)" size="24" />
-    <input id="address" placeholder="주소 (지오코딩)" size="40" />
-    <select id="type">
-      <option value="STUDENT">STUDENT</option>
-      <option value="STOP">STOP</option>
-    </select>
-    <button onclick="submitLocation()">주소 등록</button>
-    <button onclick="loadMarkers()">마커 새로고침</button>
-    <!-- 노선(경로) 기능 버튼 -->
-    <button onclick="toggleRouteMode()" id="btnRouteMode">노선등록 모드: OFF</button>
-    <button onclick="drawRoute()">경로 그리기</button>
-    <button onclick="clearRoute()">경로 지우기</button>
-    <!-- 저장된 노선 확인 -->
-    <button onclick="loadRoutes()">노선 목록 불러오기</button>
-    <select id="routeList" style="min-width:240px;"></select>
-    <button onclick="showSelectedRoute()">선택 노선 표시</button>
+<div class="map_wrap">
+  <div id="map"></div>
+  <div id="centerAddressBox" class="hAddr" style="position:absolute;right:10px;top:10px;border-radius:2px;background:rgba(255,255,255,0.9);z-index:10001;padding:6px;pointer-events:none;">
+    <span style="font-weight:700;">지도중심 행정동 주소</span>
+    <div id="centerAddr" style="margin-top:2px;"></div>
+  </div>
+
+  <div id="side">
+    <div class="section">
+      <h2>학원/지도</h2>
+      <div class="row">
+        <label for="academyId">학원 ID</label>
+        <input type="text" id="academyId" placeholder="academyId (UUID)" />
+        <button type="button" onclick="setAcademyAndLoad()">불러오기</button>
+      </div>
+      <div class="panel">
+        <div><!-- ensureTypeToggleUI()가 토글을 여기에 추가 --></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>경로(노선)</h2>
+      <div class="row">
+        <button id="btnRouteMode" type="button" onclick="toggleRouteMode()">경로작성 모드: OFF</button>
+        <button type="button" onclick="clearRoute()">선택 초기화</button>
+      </div>
+      <div class="row">
+        <label for="routeName">노선명</label>
+        <input id="routeName" placeholder="예) 하원 1호선" />
+        <button type="button" onclick="drawRoute()">경로 생성/저장</button>
+      </div>
+      <div class="row">
+        <button type="button" onclick="loadRoutes()">노선 목록</button>
+        <select id="routeList" style="flex:1"></select>
+        <button type="button" onclick="showSelectedRoute()">표시</button>
+        <button type="button" onclick="clearDisplayedRoute()">표시 지우기</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>키워드 장소 검색(정류장 등록)</h2>
+      <div class="row">
+        <label for="keyword">키워드</label>
+        <input type="text" id="keyword" placeholder="예) 학원 버스 정류장" value="이태원 맛집" />
+        <button id="btnSearch" type="button">검색</button>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="toggleClickAdd" /> 지도 클릭으로 정류장 추가</label>
+      </div>
+      <ul id="placesList"></ul>
+      <div id="pagination"></div>
+      <div class="row">
+        <button id="btnRegisterStop" type="button" disabled>선택 정류장 등록</button>
+      </div>
+      <div class="hint">선택/학원ID 입력 후 등록 버튼 활성화</div>
+    </div>
+
+    <div class="section panel" id="editPanel" style="display:none">
+      <div style="margin-bottom:6px; font-weight:600;">정류장 편집</div>
+      <div><input id="editTitle" placeholder="이름" size="24" /></div>
+      <div style="margin-top:6px;">
+        <button id="btnSaveEdit" type="button">저장</button>
+        <button id="btnDeleteEdit" type="button" style="margin-left:6px;">삭제</button>
+        <button id="btnCancelEdit" type="button" style="margin-left:6px;">취소</button>
+      </div>
+    </div>
   </div>
 </div>
-<div id="map"></div>
 
+<!-- 기존 기능 스크립트 -->
 <script src="/script.js"></script>
+
+<!-- Kakao Maps JS SDK 동적 로더 (services 포함, autoload=false) 및 검색 로직 -->
+<script>
+  (function loadKakaoSdk() {
+    const p = new URLSearchParams(location.search);
+    const fromUrl = p.get('jsKey');
+    const fromGlobal = (window && window.KAKAO_JS_KEY) ? String(window.KAKAO_JS_KEY) : '';
+    const FALLBACK = '651a42d67f9cd74a1fcbb557bb60907f';
+    const appKey = (fromUrl && fromUrl.trim()) || (fromGlobal && fromGlobal.trim()) || FALLBACK;
+    const s = document.createElement('script');
+    s.async = true; s.defer = true;
+    s.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&libraries=services&autoload=false`;
+    s.onload = function(){ if (window.kakao && kakao.maps && kakao.maps.load) kakao.maps.load(() => { initMap(); initSearch(); initClickToAdd(); }); };
+    s.onerror = function(){ alert('카카오 지도 SDK 로드 실패'); };
+    document.head.appendChild(s);
+  })();
+
+  // 키워드 검색(정류장 등록) 통합 로직
+  let searchMarkers = [];
+  let searchInfoWindow;
+  let searchSelectedIndex = -1;
+  let clickAddMode = false;
+  function initSearch() {
+    const keywordInput = document.getElementById('keyword');
+    const searchBtn = document.getElementById('btnSearch');
+    const academyInput = document.getElementById('academyId');
+    searchInfoWindow = new kakao.maps.InfoWindow({ zIndex: 2 });
+    const p = new URLSearchParams(location.search);
+    if (p.get('q')) keywordInput.value = p.get('q');
+    if (p.get('academyId')) academyInput.value = p.get('academyId');
+    searchBtn.addEventListener('click', function () { searchPlaces(); });
+    keywordInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); searchPlaces(); }});
+    academyInput.addEventListener('input', updateRegisterEnabled);
+    updateRegisterEnabled();
+  }
+  function updateRegisterEnabled() {
+    const btn = document.getElementById('btnRegisterStop');
+    const academy = document.getElementById('academyId').value.trim();
+    btn.disabled = !(window.__selectedPlace && academy);
+  }
+  window.__updateRegisterEnabled = updateRegisterEnabled;
+  function searchPlaces() {
+    const keyword = document.getElementById('keyword').value;
+    if (!keyword || !keyword.trim()) { alert('키워드를 입력해주세요.'); return; }
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(keyword, searchPlacesCB, { size: 15, page: 1 });
+  }
+  function searchPlacesCB(data, status, pagination) {
+    if (status === kakao.maps.services.Status.OK) { searchDisplayPlaces(data); searchDisplayPagination(pagination); }
+    else if (status === kakao.maps.services.Status.ZERO_RESULT) { alert('검색 결과가 없습니다.'); searchClearList(); }
+    else { alert('검색 중 오류가 발생했습니다.'); searchClearList(); }
+  }
+  function searchDisplayPlaces(places) {
+    const listEl = document.getElementById('placesList');
+    const fragment = document.createDocumentFragment();
+    const bounds = new kakao.maps.LatLngBounds();
+    searchClearList(); searchRemoveMarkers(); searchSelectedIndex = -1;
+    for (let i=0; i<places.length; i++) {
+      const p = places[i];
+      const pos = new kakao.maps.LatLng(p.y, p.x);
+      const marker = searchAddMarker(pos, i);
+      const itemEl = searchGetListItem(i, p);
+      bounds.extend(pos);
+      (function(marker, title, idx, place, itemEl){
+        kakao.maps.event.addListener(marker, 'mouseover', function(){ searchDisplayInfowindow(marker, title); });
+        kakao.maps.event.addListener(marker, 'mouseout', function(){ searchInfoWindow.close(); });
+        itemEl.onmouseover = function(){ searchDisplayInfowindow(marker, title); };
+        itemEl.onmouseout = function(){ searchInfoWindow.close(); };
+        itemEl.onclick = function(){ searchSelectPlace(idx, place, marker, itemEl, title); };
+      })(marker, p.place_name, i, p, itemEl);
+      fragment.appendChild(itemEl);
+    }
+    listEl.appendChild(fragment);
+    map.setBounds(bounds);
+  }
+  function searchGetListItem(index, place) {
+    const el = document.createElement('li');
+    const itemStr = [
+      `<span class="markerbg marker_${index + 1}"></span>`,
+      '<div class="info">',
+      `  <h5>${escapeHtml(place.place_name || '')}</h5>`,
+      place.road_address_name
+        ? `  <span>${escapeHtml(place.road_address_name)}</span><span class="jibun gray">${escapeHtml(place.address_name || '')}</span>`
+        : `  <span>${escapeHtml(place.address_name || '')}</span>`,
+      `  <span class="tel">${escapeHtml(place.phone || '')}</span>`,
+      '</div>'
+    ].join('');
+    el.innerHTML = itemStr;
+    el.className = 'item';
+    el.setAttribute('data-idx', String(index));
+    return el;
+  }
+  function searchAddMarker(position, idx) {
+    const imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_number_blue.png';
+    const imageSize = new kakao.maps.Size(36, 37);
+    const imgOptions = { spriteSize: new kakao.maps.Size(36, 691), spriteOrigin: new kakao.maps.Point(0, idx*46+10), offset: new kakao.maps.Point(13, 37) };
+    const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imgOptions);
+    const marker = new kakao.maps.Marker({ position, image: markerImage });
+    marker.setMap(map); searchMarkers.push(marker); return marker;
+  }
+  function searchRemoveMarkers(){ for (let i=0;i<searchMarkers.length;i++){ searchMarkers[i].setMap(null);} searchMarkers=[]; }
+  function searchClearList(){ const listEl=document.getElementById('placesList'); while(listEl.firstChild) listEl.removeChild(listEl.lastChild); document.getElementById('pagination').innerHTML=''; }
+  function searchDisplayPagination(pagination){ const el=document.getElementById('pagination'); while(el.firstChild) el.removeChild(el.lastChild); const frag=document.createDocumentFragment(); for(let i=1;i<=pagination.last;i++){ const a=document.createElement('a'); a.href='#'; a.innerText=String(i); if(i===pagination.current){ a.className='on'; } else { a.onclick=(function(i){ return function(e){ e.preventDefault(); pagination.gotoPage(i); };})(i);} frag.appendChild(a);} el.appendChild(frag); }
+  function searchDisplayInfowindow(marker,title){ const content = `<div style="padding:5px;z-index:1;">${escapeHtml(title||'')}</div>`; searchInfoWindow.setContent(content); searchInfoWindow.open(map, marker); }
+  function searchSelectPlace(index, place, marker, itemEl, title){ try{ if (searchSelectedIndex>=0){ const prev=document.querySelector(`#placesList li.item[data-idx="${searchSelectedIndex}"]`); if(prev) prev.classList.remove('selected'); } }catch(e){} searchSelectedIndex=index; if(itemEl) itemEl.classList.add('selected'); if(marker&&marker.getPosition){ map.panTo(marker.getPosition()); if(map.getLevel()>3) map.setLevel(3);} searchDisplayInfowindow(marker, title||(place&&place.place_name)||''); window.__selectedPlace={ index, name:place&&place.place_name, address:place&&(place.road_address_name||place.address_name), lat:Number(place&&place.y), lng:Number(place&&place.x), raw:place }; if (window.__updateRegisterEnabled) try{ window.__updateRegisterEnabled(); }catch(e){} }
+
+  // 정류장 등록
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('btnRegisterStop').addEventListener('click', async function(){
+      try {
+        if (!window.__selectedPlace) { alert('먼저 목록에서 장소를 선택하세요.'); return; }
+        const acId = (document.getElementById('academyId').value||'').trim();
+        if (!acId) { alert('학원 ID(academyId)를 입력하세요.'); return; }
+        const sel = window.__selectedPlace;
+        const url = `/api/busstop/academies/${encodeURIComponent(acId)}/bus-stops`;
+        const payload = { name: sel.name || '정류장', latitude: sel.lat, longitude: sel.lng, photoUrl: null, isActive: true };
+        const resp = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json','Accept':'application/json' }, body: JSON.stringify(payload) });
+        if (!resp.ok) { const text = await resp.text(); throw new Error(`정류장 등록 실패: ${resp.status} ${resp.statusText}\n${text}`); }
+        const data = await resp.json();
+        alert('정류장 등록 성공!\n이름: ' + (data.name || sel.name));
+        if (typeof loadMarkers === 'function') loadMarkers();
+        try { searchRemoveMarkers(); } catch (_) {}
+        try { searchClearList(); } catch (_) {}
+        try { if (searchInfoWindow) searchInfoWindow.close(); } catch (_) {}
+        window.__selectedPlace = null;
+        try { updateRegisterEnabled(); } catch (_) {}
+      } catch (e) {
+        console.error(e); alert(String(e));
+      }
+    });
+  });
+
+  // 노선 표시 지우기(저장된 노선 또는 미리보기)
+  function clearDisplayedRoute(){ try { if (typeof currentPolyline !== 'undefined' && currentPolyline) { currentPolyline.setMap(null); currentPolyline = null; } } catch(e){} if (typeof clearRouteOverlays==='function') clearRouteOverlays(); }
+
+  // 유틸: 간단한 HTML 이스케이프
+  function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+
+  // 지도 클릭으로 정류장 추가 + 중심 주소 표시
+  let clickMarker, clickInfoWindow, geocoder, clickSelectedName = '';
+  function initClickToAdd(){
+    try { geocoder = new kakao.maps.services.Geocoder(); } catch (e) { console.error('Geocoder init failed', e); return; }
+    clickMarker = new kakao.maps.Marker();
+    clickInfoWindow = new kakao.maps.InfoWindow({ zIndex: 3 });
+
+    // 최초 표시 및 idle 시 중심 주소 업데이트
+    updateCenterAddress();
+    kakao.maps.event.addListener(map, 'idle', updateCenterAddress);
+    // 토글 UI 바인딩
+    const toggle = document.getElementById('toggleClickAdd');
+    if (toggle) {
+      toggle.addEventListener('change', function(e){
+        clickAddMode = !!e.target.checked;
+        if (!clickAddMode) {
+          try { clickInfoWindow.close(); } catch (_) {}
+          try { clickMarker.setMap(null); } catch (_) {}
+        }
+      });
+    }
+
+    // 지도 클릭 시 상세 주소 조회 후 인포윈도우 표시
+    kakao.maps.event.addListener(map, 'click', function(mouseEvent){
+      if (!clickAddMode) return; // 클릭 추가 모드일 때만 동작
+      const pos = mouseEvent.latLng;
+      geocoder.coord2Address(pos.getLng(), pos.getLat(), function(result, status){
+        if (status !== kakao.maps.services.Status.OK || !result || result.length === 0) { alert('클릭 위치의 주소를 찾지 못했습니다.'); return; }
+        const road = result[0].road_address ? result[0].road_address.address_name : '';
+        const jibun = result[0].address ? result[0].address.address_name : '';
+        clickSelectedName = road || jibun || '정류장';
+        const html = '<div style="padding:6px;">'
+          + '<div style="font-weight:700;margin-bottom:4px;">주소 정보</div>'
+          + (road ? '<div>도로명주소: ' + escapeHtml(road) + '</div>' : '')
+          + (jibun ? '<div>지번 주소: ' + escapeHtml(jibun) + '</div>' : '')
+          + '<div style="margin-top:6px;text-align:right;">'
+          + '  <button type="button" style="padding:4px 8px;" onclick="registerStopAtCurrent()">이 위치로 정류장 등록</button>'
+          + '</div>'
+          + '</div>';
+        clickMarker.setPosition(pos);
+        clickMarker.setMap(map);
+        clickInfoWindow.setContent(html);
+        clickInfoWindow.open(map, clickMarker);
+      });
+    });
+  }
+
+  function updateCenterAddress(){
+    try {
+      const c = map.getCenter();
+      geocoder.coord2RegionCode(c.getLng(), c.getLat(), function(result, status){
+        if (status !== kakao.maps.services.Status.OK) return;
+        for (let i=0; i<result.length; i++) {
+          if (result[i].region_type === 'H') {
+            const el = document.getElementById('centerAddr');
+            if (el) el.textContent = result[i].address_name;
+            break;
+          }
+        }
+      });
+    } catch (e) { /* no-op */ }
+  }
+
+  // 클릭 지점 등록 (인포윈도우 버튼에서 호출)
+  async function registerStopAtCurrent(){
+    try {
+      const academyId = (document.getElementById('academyId').value || '').trim();
+      if (!academyId) { alert('학원 ID(academyId)를 입력하세요.'); return; }
+      const pos = clickMarker.getPosition();
+      if (!pos) { alert('선택된 위치가 없습니다.'); return; }
+      const url = '/api/busstop/academies/' + encodeURIComponent(academyId) + '/bus-stops';
+      const payload = { name: clickSelectedName || '정류장', latitude: pos.getLat(), longitude: pos.getLng(), photoUrl: null, isActive: true };
+      const resp = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json','Accept':'application/json' }, body: JSON.stringify(payload) });
+      if (!resp.ok) { const text = await resp.text(); throw new Error('정류장 등록 실패: ' + resp.status + ' ' + resp.statusText + '\n' + text); }
+      const data = await resp.json();
+      alert('정류장 등록 성공!\n이름: ' + (data.name || payload.name));
+      if (typeof loadMarkers === 'function') loadMarkers();
+    } catch (e) { console.error(e); alert(String(e)); }
+  }
+</script>
 </body>
 </html>

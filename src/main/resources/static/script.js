@@ -102,7 +102,12 @@ async function loadMarkers() {
       kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(map, marker));
       kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close());
       kakao.maps.event.addListener(marker, 'click', () => {
-        infowindow.open(map, marker);
+        // 경로작성 모드인 경우, 인포윈도우 대신 해당 정류장을 노선에 추가
+        if (routeMode) {
+          addStopToRoute(item.id);
+        } else {
+          infowindow.open(map, marker);
+        }
       });
 
       (markersByType['STOP'] ||= []).push(marker);

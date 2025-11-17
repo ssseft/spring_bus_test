@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>정류장 주소 검색(키워드 목록 + 마커 + 인포윈도우)</title>
+  <style>
+    /*
+     UI 레이아웃
+     - 좌측 오버레이: 검색/목록/등록 버튼
+     - 우측/배경: 지도
+    */
+    .map_wrap, .map_wrap * {margin:0; padding:0; font-family:'Malgun Gothic',dotum,'돋움',sans-serif; font-size:12px;}
+    .map_wrap a {color:#000; text-decoration:none;}
+    .map_wrap {position:relative; width:100%; height:100vh;}
+
+    #map {width:100%; height:100%; position:relative; overflow:hidden;}
+
+    #menu_wrap {position:absolute; top:0; left:0; bottom:0; width:300px; margin:10px; padding:10px; overflow-y:auto; background:rgba(255,255,255,0.95); z-index:10000; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,.15)}
+    #menu_wrap hr {display:block; height:1px; border:0; border-top:2px solid #5F5F5F; margin:8px 0;}
+    #menu_wrap .row {display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0;}
+    #menu_wrap .row label {min-width:64px; color:#333;}
+    #menu_wrap .row input[type="text"] {padding:6px 8px; border:1px solid #bbb; border-radius:6px; flex:1;}
+    #menu_wrap .row button {padding:6px 10px; border:1px solid #2b7cff; background:#2b7cff; color:#fff; border-radius:6px; cursor:pointer;}
+    #menu_wrap .row button:disabled {opacity:.5; cursor:not-allowed;}
+    #menu_wrap .hint {font-size:11px; color:#666;}
+
+    #placesList {padding:0;}
+    #placesList li {list-style:none;}
+    #placesList .item {position:relative; border-bottom:1px solid #ddd; overflow:hidden; cursor:pointer; min-height:65px; background:#fff;}
+    #placesList .item:hover {background:#f7fbff;}
+    #placesList .item.selected {background:#e8f0fe; border-left:3px solid #2b7cff;}
+    #placesList .item span {display:block; margin-top:4px;}
+    #placesList .item h5, #placesList .item .info {text-overflow:ellipsis; overflow:hidden; white-space:nowrap;}
+    #placesList .item .info {padding:10px 10px 10px 55px;}
+    #placesList .info .gray {color:#8a8a8a;}
+    #placesList .info .jibun {padding-left:26px; background:url(https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/places_jibun.png) no-repeat;}
+    #placesList .info .tel {color:#009900;}
+    #placesList .item .markerbg {float:left; position:absolute; width:36px; height:37px; margin:10px 0 0 10px; background:url(https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_number_blue.png) no-repeat;}
+    #placesList .item .marker_1 {background-position:0 -10px;}
+    #placesList .item .marker_2 {background-position:0 -56px;}
+    #placesList .item .marker_3 {background-position:0 -102px;}
+    #placesList .item .marker_4 {background-position:0 -148px;}
+    #placesList .item .marker_5 {background-position:0 -194px;}
+    #placesList .item .marker_6 {background-position:0 -240px;}
+    #placesList .item .marker_7 {background-position:0 -286px;}
+    #placesList .item .marker_8 {background-position:0 -332px;}
+    #placesList .item .marker_9 {background-position:0 -378px;}
+    #placesList .item .marker_10 {background-position:0 -423px;}
+    #placesList .item .marker_11 {background-position:0 -470px;}
+    #placesList .item .marker_12 {background-position:0 -516px;}
+    #placesList .item .marker_13 {background-position:0 -562px;}
+    #placesList .item .marker_14 {background-position:0 -608px;}
+    #placesList .item .marker_15 {background-position:0 -654px;}
+
+    #pagination {margin:10px auto; text-align:center;}
+    #pagination a {display:inline-block; margin-right:10px;}
+    #pagination .on {font-weight:bold; cursor:default; color:#777;}
+  </style>
+</head>
+<body>
+<div class="map_wrap">
+  <div id="map"></div>
+
+  <div id="menu_wrap">
+    <div class="row">
+      <label for="keyword">키워드</label>
+      <input type="text" id="keyword" placeholder="예) 학원 버스 정류장" value="이태원 맛집" />
+      <button id="btnSearch" type="button">검색</button>
+    </div>
+    <div class="row">
+      <label for="academyId">학원 ID</label>
+      <input type="text" id="academyId" placeholder="academyId (UUID)" />
+      <button id="btnRegisterStop" type="button" disabled>정류장 등록</button>
+    </div>
+    <div class="row hint">팁: URL에 ?jsKey=... 및 ?academyId=... 를 줄 수 있습니다.</div>
+    <hr />
+    <ul id="placesList"></ul>
+    <div id="pagination"></div>
+  </div>
+</div>
+
+<script>
+  // Kakao Maps JS SDK 동적 로더
+  (function loadKakaoSdk() {
+    const params = new URLSearchParams(location.search);
+    const fromUrl = params.get('jsKey');
+    const fromGlobal = (window && window.KAKAO_JS_KEY) ? String(window.KAKAO_JS_KEY) : '';
+    const FALLBACK = '651a42d67f9cd74a1fcbb557bb60907f'; // 기본 JS 키(요청에 따라 하드코딩)
+    const appKey = (fromUrl && fromUrl.trim()) || (fromGlobal && fromGlobal.trim()) || FALLBACK;
+
+    const s = document.createElement('script');
+    s.async = true;
+    s.defer = true;
+    s.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&libraries=services&autoload=false`;
+    s.onload = function () {
+      if (window.kakao && kakao.maps && kakao.maps.load) kakao.maps.load(init);
+      else alert('카카오 지도 SDK 로드 실패');
+    };
+    s.onerror = function () { alert('카카오 지도 SDK 스크립트 로드 실패'); };
+    document.head.appendChild(s);
+  })();
+
+  // 전역 상태
+  let map, placesService, infowindow;
+  let markers = [];
+  let selectedIndex = -1;
+
+  // 초기화: 지도/서비스/이벤트 결합
+  function init() {
+    const params = new URLSearchParams(location.search);
+    const centerLat = parseFloat(params.get('centerLat')) || 37.566826;
+    const centerLng = parseFloat(params.get('centerLng')) || 126.9786567;
+    const level = parseInt(params.get('level') || '3', 10);
+    const initKeyword = params.get('q') || params.get('keyword');
+    const academyParam = params.get('academyId');
+
+    // 지도 생성
+    map = new kakao.maps.Map(document.getElementById('map'), {
+      center: new kakao.maps.LatLng(centerLat, centerLng),
+      level: isFinite(level) ? level : 3
+    });
+
+    // 서비스 생성
+    placesService = new kakao.maps.services.Places();
+    infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+
+    // UI 참조
+    const keywordInput = document.getElementById('keyword');
+    const searchBtn = document.getElementById('btnSearch');
+    const academyInput = document.getElementById('academyId');
+    const registerBtn = document.getElementById('btnRegisterStop');
+
+    if (initKeyword) keywordInput.value = initKeyword;
+    if (academyParam) academyInput.value = academyParam;
+
+    // 검색 버튼 및 Enter 제출
+    searchBtn.addEventListener('click', function () { searchPlaces(); });
+    keywordInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); searchPlaces(); }});
+
+    // 등록 버튼 활성화 제어
+    function updateRegisterEnabled() {
+      const hasSel = !!window.__selectedPlace;
+      const hasAc = !!(academyInput && academyInput.value && academyInput.value.trim());
+      registerBtn.disabled = !(hasSel && hasAc);
+    }
+    window.__updateRegisterEnabled = updateRegisterEnabled;
+    academyInput.addEventListener('input', updateRegisterEnabled);
+    updateRegisterEnabled();
+
+    // 정류장 등록
+    registerBtn.addEventListener('click', async function () {
+      try {
+        if (!window.__selectedPlace) { alert('먼저 목록에서 장소를 선택하세요.'); return; }
+        if (!academyInput.value.trim()) { alert('학원 ID(academyId)를 입력하세요.'); return; }
+        const sel = window.__selectedPlace;
+        const acId = academyInput.value.trim();
+        const url = `/api/busstop/academies/${encodeURIComponent(acId)}/bus-stops`;
+        const payload = { name: sel.name || '정류장', latitude: sel.lat, longitude: sel.lng, photoUrl: null, isActive: true };
+        const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(payload) });
+        if (!resp.ok) { const text = await resp.text(); throw new Error(`정류장 등록 실패: ${resp.status} ${resp.statusText}\n${text}`); }
+        const data = await resp.json();
+        alert('정류장 등록 성공!\n이름: ' + (data.name || sel.name));
+      } catch (err) {
+        console.error(err);
+        alert(String(err));
+      } finally {
+        updateRegisterEnabled();
+      }
+    });
+
+    // 초기 검색 자동 수행
+    if (keywordInput.value && keywordInput.value.trim()) searchPlaces();
+  }
+
+  // 검색 실행
+  function searchPlaces() {
+    const keyword = document.getElementById('keyword').value;
+    if (!keyword || !keyword.trim()) { alert('키워드를 입력해주세요.'); return; }
+    placesService.keywordSearch(keyword, placesSearchCB, { size: 15, page: 1 });
+  }
+
+  // 검색 콜백
+  function placesSearchCB(data, status, pagination) {
+    if (status === kakao.maps.services.Status.OK) {
+      displayPlaces(data);
+      displayPagination(pagination);
+    } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+      alert('검색 결과가 존재하지 않습니다.');
+      clearListAndMarkers();
+    } else if (status === kakao.maps.services.Status.ERROR) {
+      alert('검색 중 오류가 발생했습니다.');
+      clearListAndMarkers();
+    }
+  }
+
+  // 결과 표시(목록 + 마커)
+  function displayPlaces(places) {
+    const listEl = document.getElementById('placesList');
+    const menuEl = document.getElementById('menu_wrap');
+    const fragment = document.createDocumentFragment();
+    const bounds = new kakao.maps.LatLngBounds();
+
+    // 초기화
+    removeAllChildNodes(listEl);
+    removeMarker();
+    selectedIndex = -1;
+
+    for (let i = 0; i < places.length; i++) {
+      const place = places[i];
+      const position = new kakao.maps.LatLng(place.y, place.x); // Kakao: y=lat, x=lng
+
+      const marker = addMarker(position, i);
+      const itemEl = getListItem(i, place);
+      bounds.extend(position);
+
+      (function (marker, title, idx, place, itemEl) {
+        kakao.maps.event.addListener(marker, 'mouseover', function () { displayInfowindow(marker, title); });
+        kakao.maps.event.addListener(marker, 'mouseout', function () { infowindow.close(); });
+        itemEl.onmouseover = function () { displayInfowindow(marker, title); };
+        itemEl.onmouseout = function () { infowindow.close(); };
+        itemEl.onclick = function () { selectPlace(idx, place, marker, itemEl, title); };
+      })(marker, place.place_name, i, place, itemEl);
+
+      fragment.appendChild(itemEl);
+    }
+
+    listEl.appendChild(fragment);
+    menuEl.scrollTop = 0;
+    map.setBounds(bounds);
+  }
+
+  // 결과 항목 DOM 생성
+  function getListItem(index, place) {
+    const el = document.createElement('li');
+    const itemStr = [
+      `<span class="markerbg marker_${index + 1}"></span>`,
+      '<div class="info">',
+      `  <h5>${escapeHtml(place.place_name || '')}</h5>`,
+      place.road_address_name
+        ? `  <span>${escapeHtml(place.road_address_name)}</span><span class="jibun gray">${escapeHtml(place.address_name || '')}</span>`
+        : `  <span>${escapeHtml(place.address_name || '')}</span>`,
+      `  <span class="tel">${escapeHtml(place.phone || '')}</span>`,
+      '</div>'
+    ].join('');
+    el.innerHTML = itemStr;
+    el.className = 'item';
+    el.setAttribute('data-idx', String(index));
+    return el;
+  }
+
+  // 마커 추가(번호 스프라이트)
+  function addMarker(position, idx) {
+    const imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_number_blue.png';
+    const imageSize = new kakao.maps.Size(36, 37);
+    const imgOptions = { spriteSize: new kakao.maps.Size(36, 691), spriteOrigin: new kakao.maps.Point(0, idx * 46 + 10), offset: new kakao.maps.Point(13, 37) };
+    const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imgOptions);
+    const marker = new kakao.maps.Marker({ position, image: markerImage });
+    marker.setMap(map);
+    markers.push(marker);
+    return marker;
+  }
+
+  // 모든 마커 제거
+  function removeMarker() { for (let i = 0; i < markers.length; i++) { markers[i].setMap(null); } markers = []; }
+
+  // 페이지네이션 렌더링
+  function displayPagination(pagination) {
+    const paginationEl = document.getElementById('pagination');
+    const fragment = document.createDocumentFragment();
+    while (paginationEl.hasChildNodes()) paginationEl.removeChild(paginationEl.lastChild);
+    for (let i = 1; i <= pagination.last; i++) {
+      const a = document.createElement('a');
+      a.href = '#';
+      a.innerText = String(i);
+      if (i === pagination.current) a.className = 'on';
+      else a.onclick = (function (i) { return function (e) { e.preventDefault(); pagination.gotoPage(i); }; })(i);
+      fragment.appendChild(a);
+    }
+    paginationEl.appendChild(fragment);
+  }
+
+  // 인포윈도우 표시
+  function displayInfowindow(marker, title) {
+    const content = `<div style="padding:5px;z-index:1;">${escapeHtml(title || '')}</div>`;
+    infowindow.setContent(content);
+    infowindow.open(map, marker);
+  }
+
+  // 항목 선택 처리
+  function selectPlace(index, place, marker, itemEl, title) {
+    try {
+      if (selectedIndex >= 0) {
+        const prev = document.querySelector(`#placesList li.item[data-idx="${selectedIndex}"]`);
+        if (prev) prev.classList.remove('selected');
+      }
+    } catch (e) {}
+    selectedIndex = index;
+    if (itemEl) itemEl.classList.add('selected');
+    if (marker && marker.getPosition) {
+      map.panTo(marker.getPosition());
+      if (map.getLevel() > 3) map.setLevel(3);
+    }
+    displayInfowindow(marker, title || (place && place.place_name) || '');
+    window.__selectedPlace = { index, name: place && place.place_name, address: place && (place.road_address_name || place.address_name), lat: Number(place && place.y), lng: Number(place && place.x), raw: place };
+    if (window.__updateRegisterEnabled) try { window.__updateRegisterEnabled(); } catch (e) {}
+  }
+
+  // 유틸
+  function clearListAndMarkers() { removeMarker(); removeAllChildNodes(document.getElementById('placesList')); document.getElementById('pagination').innerHTML = ''; }
+  function removeAllChildNodes(el) { while (el.hasChildNodes()) el.removeChild(el.lastChild); }
+  function escapeHtml(s) { return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+</script>
+</body>
+</html>
+
