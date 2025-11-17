@@ -230,8 +230,7 @@ public class ScheduleService {
             boolean exists = scheduleStudentRepository.findByScheduleIdAndStudentId(scheduleId, it.getStudentId()).isPresent();
             if (exists) throw new BaseException(ErrorCode.INVALID_INPUT_VALUE, "student already assigned");
         }
-        
-        //저장 이건 그냥 gpt로 구현함
+
         for (ScheduleStudentRequest it : items) {
             Student student = students.stream().filter(x -> x.getId().equals(it.getStudentId())).findFirst().orElse(null);
             BusStop stop = stops.stream().filter(x -> x.getId().equals(it.getBusStopId())).findFirst().orElse(null);
