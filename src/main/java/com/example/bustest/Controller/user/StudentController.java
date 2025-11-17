@@ -13,6 +13,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "*")
+//임시 컨트롤러임(학생 조회를 위해) 합쳐질 때, 지울예정
 public class StudentController {
 
     @PersistenceContext

@@ -66,6 +66,8 @@ public class ScheduleController {
         return ScheduleResponse.from(s, assigns);
     }
 
+
+    // 타요/안타요 토글 관련 activate/ deactivate
     @PostMapping("/{scheduleId}:activate")
     public ResponseEntity<?> activate(@PathVariable UUID scheduleId) {
         scheduleService.activate(scheduleId);
@@ -78,6 +80,8 @@ public class ScheduleController {
         return ResponseEntity.noContent().build();
     }
 
+
+    //스케줄 단건 조회
     @GetMapping("/{scheduleId}")
     public ScheduleResponse get(@PathVariable UUID scheduleId) {
         Schedule s = scheduleRepository.findById(scheduleId)
@@ -85,7 +89,8 @@ public class ScheduleController {
         List<ScheduleStudent> assigns = scheduleStudentRepository.findByScheduleId(s.getId());
         return ScheduleResponse.from(s, assigns);
     }
-
+    
+    //스케줄 list 조회
     @GetMapping
     public List<ScheduleResponse> list(@RequestParam(required = false) UUID academyId) {
         List<Schedule> items = (academyId != null)
@@ -96,12 +101,14 @@ public class ScheduleController {
                 .toList();
     }
 
+    //스케줄 삭제
     @DeleteMapping("/{scheduleId}")
     public ResponseEntity<?> delete(@PathVariable UUID scheduleId) {
         scheduleService.delete(scheduleId);
         return ResponseEntity.noContent().build();
     }
 
+    //학생- 정류장 매핑 추가
     @PostMapping("/{scheduleId}/assignments")
     public ScheduleResponse addAssignments(@PathVariable UUID scheduleId,
                                            @RequestBody List<@Valid ScheduleStudentRequest> items) {
@@ -110,6 +117,7 @@ public class ScheduleController {
         return ScheduleResponse.from(s, assigns);
     }
 
+    //학생- 정류장 매핑 테이블 수정
     @PatchMapping("/{scheduleId}/assignments/{studentId}")
     public ScheduleResponse updateAssignment(@PathVariable UUID scheduleId,
                                              @PathVariable UUID studentId,
@@ -119,6 +127,7 @@ public class ScheduleController {
         return ScheduleResponse.from(s, assigns);
     }
 
+    //학생-정류장 매핑 테이블 삭제
     @DeleteMapping("/{scheduleId}/assignments/{studentId}")
     public ResponseEntity<?> deleteAssignment(@PathVariable UUID scheduleId,
                                               @PathVariable UUID studentId) {
@@ -126,12 +135,19 @@ public class ScheduleController {
         return ResponseEntity.noContent().build();
     }
 
+
+    
+    //노선 변경(스케줄에서) -> 이거는 스케줄에 포함된 학생들 전부 삭제
     @PostMapping("/{scheduleId}:change-route")
     public ScheduleResponse changeRoute(@PathVariable UUID scheduleId,
                                         @RequestBody ScheduleRouteChangeRequest req) {
-        UUID newRouteId = req != null ? req.getRouteId() : null;
+        UUID newRouteId;
+        //수정 요청이 없을 경우에는 기존 노선으로
+        if(req == null) newRouteId = null;
+        else newRouteId = req.getRouteId();
         Schedule s = scheduleService.changeRouteAndResetAssignments(scheduleId, newRouteId);
         List<ScheduleStudent> assigns = scheduleStudentRepository.findByScheduleId(s.getId());
+
         return ScheduleResponse.from(s, assigns);
     }
 }

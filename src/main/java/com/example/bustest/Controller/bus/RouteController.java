@@ -24,7 +24,7 @@ public class RouteController {
     private final RouteQueryService routeQueryService;
     private final com.example.bustest.Repository.bus.RouteStopRepository routeStopRepository;
 
-    // Preview (BusStop 기반 / UUID)
+    //Preview
     @PostMapping({"/preview", "/directions-busstops"})
     public ResponseEntity<RoutePreviewResponse> previewByBusStops(@RequestBody RouteCreateRequest req) {
         List<UUID> ids = Optional.ofNullable(req.getOrderedBusStopIds()).orElse(Collections.emptyList());
@@ -35,7 +35,7 @@ public class RouteController {
         Map<UUID, BusStop> byId = busStopRepository.findAllById(ids)
                 .stream().collect(Collectors.toMap(BusStop::getId, it -> it));
 
-        // 존재하지 않는 정류장 ID가 있으면 명시적으로 오류 반환
+        //존재하지 않는 정류장 확인
         List<UUID> missing = ids.stream().filter(id -> !byId.containsKey(id)).toList();
         if (!missing.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

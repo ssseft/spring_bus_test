@@ -187,10 +187,8 @@ public class ScheduleService {
         dailyPlanService.upsertRange(scheduleId, from, to);
     }
     
-    /**
-     * 스케줄 삭제
-     * - 자식 배정(schedule_students) 먼저 삭제 후 스케줄 삭제
-     */
+    //스케줄 삭제
+    // schedule_students 먼저 삭제 후 스케줄 삭제
     @Transactional
     public void delete(UUID scheduleId) {
         Schedule s = scheduleRepository.findById(scheduleId)
