@@ -15,7 +15,7 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "driving_students",
-        uniqueConstraints = @UniqueConstraint(name = "uq_run_student", columnNames = {"run_id", "student_id"})
+        uniqueConstraints = @UniqueConstraint(name = "uq_driving_student", columnNames = {"driving_id", "student_id"})
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -27,7 +27,7 @@ public class DrivingStudent {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "run_id", nullable = false)
+    @JoinColumn(name = "driving_id", nullable = false)
     private Driving driving;
 
     @ManyToOne(fetch = FetchType.LAZY)
