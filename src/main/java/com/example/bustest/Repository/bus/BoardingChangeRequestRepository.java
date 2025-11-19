@@ -8,8 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface BoardingChangeRequestRepository extends JpaRepository<BoardingChangeRequest, UUID> {
-    List<BoardingChangeRequest> findByRun_Id(UUID runId);
-    List<BoardingChangeRequest> findByRun_IdAndStudent_Id(UUID runId, UUID studentId);
-    Optional<BoardingChangeRequest> findByRun_IdAndStudent_IdAndStatus(UUID runId, UUID studentId, BoardingChangeRequest.Status status);
+    List<BoardingChangeRequest> findByDriving_Id(UUID drivingId);
+    List<BoardingChangeRequest> findByDriving_IdAndStudent_Id(UUID drivingId, UUID studentId);
+    Optional<BoardingChangeRequest> findByDriving_IdAndStudent_IdAndStatus(UUID drivingId, UUID studentId, BoardingChangeRequest.Status status);
 }
 

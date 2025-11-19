@@ -13,7 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class BoardingChangeResponse {
     private UUID id;
-    private UUID runId;
+    private UUID drivingId;
     private UUID studentId;
     private UUID fromStopId;
     private UUID toStopId;
@@ -27,7 +27,7 @@ public class BoardingChangeResponse {
     public static BoardingChangeResponse from(BoardingChangeRequest r) {
         return new BoardingChangeResponse(
                 r.getId(),
-                r.getRun().getId(),
+                r.getDriving().getId(),
                 r.getStudent().getId(),
                 r.getFromStop().getId(),
                 r.getToStop().getId(),

@@ -19,12 +19,12 @@ public class BoardingChangeRequestController {
 
     private final BoardingChangeRequestService service;
 
-    // 학생 요청 생성: POST /api/runs/{runId}/students/{studentId}/boarding-change-requests
-    @PostMapping("/api/runs/{runId}/students/{studentId}/boarding-change-requests")
-    public BoardingChangeResponse create(@PathVariable UUID runId,
+    // 학생 요청 생성: POST /api/drivings/{drivingId}/students/{studentId}/boarding-change-requests
+    @PostMapping("/api/drivings/{drivingId}/students/{studentId}/boarding-change-requests")
+    public BoardingChangeResponse create(@PathVariable UUID drivingId,
                                          @PathVariable UUID studentId,
                                          @RequestBody BoardingChangeCreateRequest req) {
-        var r = service.request(runId, studentId, req.getToBusStopId(), req.getReason());
+        var r = service.request(drivingId, studentId, req.getToBusStopId(), req.getReason());
         return BoardingChangeResponse.from(r);
     }
 
@@ -44,10 +44,10 @@ public class BoardingChangeRequestController {
         return BoardingChangeResponse.from(r);
     }
 
-    // Run 기준 목록: GET /api/runs/{runId}/boarding-change-requests
-    @GetMapping("/api/runs/{runId}/boarding-change-requests")
-    public List<BoardingChangeResponse> listByRun(@PathVariable UUID runId) {
-        return service.listByRun(runId).stream().map(BoardingChangeResponse::from).toList();
+    // Driving 기준 목록: GET /api/drivings/{drivingId}/boarding-change-requests
+    @GetMapping("/api/drivings/{drivingId}/boarding-change-requests")
+    public List<BoardingChangeResponse> listByDriving(@PathVariable UUID drivingId) {
+        return service.listByDriving(drivingId).stream().map(BoardingChangeResponse::from).toList();
     }
 }
 

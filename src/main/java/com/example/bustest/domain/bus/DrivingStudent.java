@@ -14,12 +14,12 @@ import java.util.UUID;
 
 @Entity
 @Table(
-        name = "run_students",
+        name = "driving_students",
         uniqueConstraints = @UniqueConstraint(name = "uq_run_student", columnNames = {"run_id", "student_id"})
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RunStudent {
+public class DrivingStudent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,7 +28,7 @@ public class RunStudent {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "run_id", nullable = false)
-    private Run run;
+    private Driving driving;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -47,7 +47,7 @@ public class RunStudent {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private RunStudentStatus status; //default : reserved
+    private drivingStudentStatus status; //default : reserved
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -56,13 +56,13 @@ public class RunStudent {
     private Instant updatedAt = Instant.now();
 
     @Builder
-    public RunStudent(Run run,
-                      Student student,
-                      LocalDate date,
-                      BusStop busStop,
-                      LocalTime plannedTime,
-                      RunStudentStatus status) {
-        this.run = run;
+    public DrivingStudent(Driving driving,
+                          Student student,
+                          LocalDate date,
+                          BusStop busStop,
+                          LocalTime plannedTime,
+                          drivingStudentStatus status) {
+        this.driving = driving;
         this.student = student;
         this.date = date;
         this.busStop = busStop;
@@ -74,14 +74,14 @@ public class RunStudent {
 
     public void update(BusStop busStop,
                        LocalTime plannedTime,
-                       RunStudentStatus status) {
+                       drivingStudentStatus status) {
         if (busStop != null) this.busStop = busStop;
         if (plannedTime != null) this.plannedTime = plannedTime;
         if (status != null) this.status = status;
         this.updatedAt = Instant.now();
     }
 
-    public enum RunStudentStatus {
+    public enum drivingStudentStatus {
         reserved,
         boarded,
         completed,

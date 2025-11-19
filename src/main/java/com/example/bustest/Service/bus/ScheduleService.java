@@ -33,7 +33,7 @@ public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final RouteRepository routeRepository;
-    private final RunService dailyPlanService;
+    private final DrivingService dailyPlanService;
     private final ScheduleStudentRepository scheduleStudentRepository;
     private final RouteStopRepository routeStopRepository;
     private final StudentRepository studentRepository;
@@ -181,7 +181,7 @@ public class ScheduleService {
         s.update(null, null, null, null, null, null, false);
     }
 
-    // 기간조정을 해 run테이블 생성 함수 아직 미구현
+    // 기간 조정으로 driving 테이블 생성 함수 (아직 미구현)
     @Transactional
     public void buildPlans(UUID scheduleId, LocalDate from, LocalDate to) {
         dailyPlanService.upsertRange(scheduleId, from, to);

@@ -1,6 +1,6 @@
-package com.example.bustest.dto.run;
+package com.example.bustest.dto.driving;
 
-import com.example.bustest.domain.bus.Run;
+import com.example.bustest.domain.bus.Driving;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,7 +13,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RunResponse {
+public class DrivingResponse {
     private UUID id;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate date;
@@ -22,9 +22,9 @@ public class RunResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    public static RunResponse from(Run r) {
+    public static DrivingResponse from(Driving r) {
         UUID routeId = r.getRoute() != null ? r.getRoute().getId() : null;
-        return new RunResponse(
+        return new DrivingResponse(
                 r.getId(),
                 r.getDate(),
                 r.getStatus() != null ? r.getStatus().toString() : null,

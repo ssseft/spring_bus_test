@@ -19,10 +19,10 @@ public class Schedule {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     // schedule는 불변인가? 아니면 변할 수 있는가를 고민해봤는데
-    // schedule은 운행 default 템플릿으로 이해하고 일시적으로 학생 미탑승/타는 위치 변경은 run테이블에서 적용
+    // schedule은 운행 default 템플릿으로 이해하고 일시적으로 학생 미탑승/타는 위치 변경은 driving 테이블에서 적용
     // ScheduleDailyPlan은 한달 기준으로 생성 : ex) 선택한 Schedule 8월 일정만들기를 하면 8월 해당요일 전체 생성(여기서 학원 휴무일/버스 미운행 등 설정)
-    // 예를 들어 한 학생이 일시적으로 승/하차하는 장소를 변경한다? -> 우선 Student/parent는 삭제는 가능하도록 설정(run에서 삭제는 가능)
-    // 요청은 학생 -> 학원에게 요청 해서 run에서 노선 추가는 학원에서만 수정 가능하도록 한다.(이동시간 계산을 위해 노선을 재등록 해야함)
+    // 예를 들어 한 학생이 일시적으로 승/하차하는 장소를 변경한다? -> 우선 Student/parent는 삭제는 가능하도록 설정(driving에서 삭제는 가능)
+    // 요청은 학생 -> 학원에게 요청 해서 driving에서 노선 추가는 학원에서만 수정 가능하도록 한다.(이동시간 계산을 위해 노선을 재등록 해야함)
     // 특별 운행(일회성 운행)은 어떻게 할건가? 에 대해서는 Schedule에 추가 필드를 넣어야 할 거 같긴한데(repeat_days에 0을 일회성으로 한다던가,is_temp와 같은 필드) 이건 논의 필요
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;

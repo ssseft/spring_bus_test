@@ -1,6 +1,6 @@
-package com.example.bustest.dto.run;
+package com.example.bustest.dto.driving;
 
-import com.example.bustest.domain.bus.Run;
+import com.example.bustest.domain.bus.Driving;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,9 +12,9 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RunBulkRequest {
+public class DrivingBulkRequest {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private List<LocalDate> dates;
-    private Run.RunStatus status; // optional: set same status for all
+    private Driving.drivingStatus status; // optional: set same status for all
 }
 

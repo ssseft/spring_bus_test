@@ -12,12 +12,12 @@ import java.util.UUID;
 
 //운행 계획(일자별)
 @Entity
-@Table(name = "runs",
-       uniqueConstraints = @UniqueConstraint(name = "uq_run_schedule_date", columnNames = {"schedule_id", "date"}))
+@Table(name = "driving",
+       uniqueConstraints = @UniqueConstraint(name = "uq_driving_schedule_date", columnNames = {"schedule_id", "date"}))
 //스케쥴id : date 1:1 보장을 위해 uniqueconstraint추가
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Run {
+public class Driving {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,7 +33,7 @@ public class Run {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
-    private RunStatus status;
+    private drivingStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_id", nullable = true)
@@ -46,10 +46,10 @@ public class Run {
     private Instant updatedAt = Instant.now();
 
     @Builder
-    public Run(Schedule schedule,
-               LocalDate date,
-               RunStatus status,
-               Route route) {
+    public Driving(Schedule schedule,
+                   LocalDate date,
+                   drivingStatus status,
+                   Route route) {
         this.schedule = schedule;
         this.date = date;
         this.status = status;
@@ -58,13 +58,13 @@ public class Run {
         this.updatedAt = Instant.now();
     }
 
-    public void update(RunStatus status, Route route) {
+    public void update(drivingStatus status, Route route) {
         if (status != null) this.status = status;
         this.route = route;
         this.updatedAt = Instant.now();
     }
 
-    public enum RunStatus {
+    public enum drivingStatus {
         scheduled,
         in_progress,
         completed,

@@ -13,7 +13,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "boarding_change_requests",
        indexes = {
-               @Index(name = "idx_bcr_run_student_status", columnList = "run_id, student_id, status")
+               @Index(name = "idx_bcr_driving_student_status", columnList = "driving_id, student_id, status")
        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -25,8 +25,8 @@ public class BoardingChangeRequest {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "run_id", nullable = false)
-    private Run run;
+    @JoinColumn(name = "driving_id", nullable = false)
+    private Driving driving;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -68,13 +68,13 @@ public class BoardingChangeRequest {
     public enum Status { pending, approved, rejected }
 
     @Builder
-    public BoardingChangeRequest(Run run,
+    public BoardingChangeRequest(Driving driving,
                                  Student student,
                                  BusStop fromStop,
                                  BusStop toStop,
                                  Status status,
                                  String reason) {
-        this.run = run;
+        this.driving = driving;
         this.student = student;
         this.fromStop = fromStop;
         this.toStop = toStop;
